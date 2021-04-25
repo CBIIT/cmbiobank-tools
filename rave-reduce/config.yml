@@ -1,0 +1,165 @@
+default:
+  version: 1.0
+  # subset of columns common across all tables that should appear in the reduced output:
+  com_cols:
+    - project
+    - subjectId
+    - Subject
+    - siteid
+    - Site
+    - SiteNumber
+
+  # table of 10323 CRF terms, human-readable term names, the source CRF names, and corresponding Rave table names
+  # (in R serialized format)
+  terms_rds_file: form-terms.rds
+
+  # Excel on Teams (NCI-DCTD Moonshot Biobank IT)
+  # "Files/ID Management/Random IDs.xlsx"
+  # https://nih.sharepoint.com/sites/NCI-DCTDMoonshotBiobankIT/_layouts/15/Doc.aspx?OR=teams&action=edit&sourcedoc={55814EA3-DDEE-4788-8B9A-3A52DB952DC8}
+  # Updated for each data dump -- download into working directory
+  
+  ids_file: "Random IDs.xlsx"
+
+  # set of table names that will be searched for column data (eXtract from
+  # the uncommented tables...)
+
+## config for statistics output
+stats:
+  xtbls:
+    administrative_enrollment: null
+    #  adverse_baseline_symptoms:
+    adverse_event_presence: null
+    #  baseline_lesion:
+    #  baseline_medical_history:
+    #  baseline_symptoms_presence:
+    biopsy_adverse_event_presence: null
+    biopsy_adverse_events: null
+    biopsy_pathology_verification_and_assessment: null
+    #  blood_chemistry__hepatic:
+    #  blood_chemistry__renal:
+    blood_collection_adverse_event_presence: null
+    blood_collection_adverse_events: null
+    #  blood_gases:
+    #  bone_marrow:
+    #  comment:
+    #  concomitant_and_prior_medications:
+    #  constat:
+    #  copy_shipping:
+    #  course_assessment:
+    #  course_initiation:
+    #  covid_19_related_study_interruptions:
+    #  covid_19_related_withdrawals:
+    #  covid_19_testing:
+    #  creatinine_clearance:
+    #  ctsu_ae:
+    #  ctsu_aer:
+    #  ctsu_demography:
+    #  ctsu_lae:
+    #  ctsu_laer:
+    #  ctsu_patient_information:
+    #  ctsu_step_information:
+    #  ctsu_subject_enrollment:
+    #  ctsu_treatment_assignment:
+    #  death_summary:
+    #  docqar:
+    enrollment: null
+    #  follow_up:
+    #  genetic_markers:
+    #  hematology:
+    #  hidden_labels:
+    histology_and_disease: null
+    #  immune_parameters:
+    intervening_therapy: null
+    #  lab:
+    #  late_adverse_event_presence:
+    #  literal_laboratory:
+    #  mineome_cdecart:
+    #  new_lesion:
+    #  new_lesion_presence:
+    #  off_study:
+    #  off_treatment:
+    oncomine_result: null
+    #  other_serum_chemistry:
+    #  other_urinalysis:
+    #  pancreatic__thyroid___cardiac:
+    #  patient_eligibility:
+    #  pharmacokinetics_result_form:
+    #  physical_exam:
+    #  pk_pd_pg_dosing_and_sample_collection:
+    #  pregnancy_test_log:
+    #  print_labels:
+    #  prior__radiation_supplement:
+    #  prior__surgery_supplement:
+    #  prior__therapy_supplement:
+    prior__treatment_summary: null
+    #  receiving_status:
+    #  red_blood_cells:
+    #  respiratory_function:
+    #  serology:
+    #  serum_electrophoresis:
+    shipping_status: null
+    #  social_and_environmental_factors:
+    #  specimen_consent:
+    specimen_tracking_enrollment: null
+    specimen_transmittal: null
+    #  study_continuation:
+    #  study_radiation_therapy:
+    #  subcon:
+    targeted_therapy_administration: null
+    #  tracking_contacts:
+    #  transfusion:
+    #  triad_series_cr:
+    #  triad_series_ct:
+    #  triad_series_dx:
+    #  triad_series_es:
+    #  triad_series_mg:
+    #  triad_series_mr:
+    #  triad_series_nm:
+    #  triad_series_pt:
+    #  triad_series_us:
+    #  triad_series_xa:
+    #  tumor_serology:
+    #  unanticipated_laboratory_results:
+    #  urinalysis:
+    #  urine_immune_electrophoresis:
+    #  vital_signs:
+
+  # Columns to extract from tables, using Rave column names
+  # (Rave column names correspond to entries in the OID column of
+  # the form-terms.rds table)
+  xcols: null
+  output: null
+
+## config for IROC output
+iroc:
+  xtbls:
+    administrative_enrollment:
+      - CTEPID
+      - DSSTDAT_ENROLLMENT_RAW
+      - CTEP_SDC_MED_V10_CD
+      - pub_id
+      - up_id
+  xcols: null
+  output:
+    cmb_registration_data_for_iroc.txt:
+      func: |+
+        function (pull_date) {
+        cras  <- read_excel("cra-users.xlsx",1)
+        dta$enrollment %>% inner_join(pub_ids, by=c("Subject" = "ctep_id")) %>%
+        select(project, Subject, Site,CTEPID, DSSTDAT_ENROLLMENT_RAW,CTEP_SDC_MED_V10_CD, pub_id,up_id) %>%
+        left_join( dta$shipping_status %>%
+                   select(Subject, EMAIL_SHP) %>%
+                   inner_join(cras,by=c("EMAIL_SHP" = "Email")) %>%
+                   group_by(Subject) %>%
+                   summarize( CRA = first(EMAIL_SHP)),
+                   by = c("Subject")) %>%
+        transmute("Date Created" = str_interp("${pull_date}"),
+                  "Study" = project,
+                  "Registration Step" = 1,
+                  "Registration Step Description" = str_interp("Enrollment"),
+                  "Site Name" = Site,
+                  "Site CTEP ID" = CTEPID, "CTEP Patient ID" = Subject, "Registering Site Contact" = CRA,
+                  "Current Site Contact" = CRA, "Universal Patient ID" = up_id,
+                  "Registration Date" = DSSTDAT_ENROLLMENT_RAW, "Public Patient ID" = pub_id,
+                  "Cancer Type" = CTEP_SDC_MED_V10_CD)}
+      delim: "|"
