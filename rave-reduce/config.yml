@@ -12,7 +12,8 @@ default:
   # table of 10323 CRF terms, human-readable term names, the source CRF names, and corresponding Rave table names
   # (in R serialized format)
   terms_rds_file: form-terms.rds
-
+  strategies_file: strategies.r
+  
   # Excel on Teams (NCI-DCTD Moonshot Biobank IT)
   # "Files/ID Management/Random IDs.xlsx"
   # https://nih.sharepoint.com/sites/NCI-DCTDMoonshotBiobankIT/_layouts/15/Doc.aspx?OR=teams&action=edit&sourcedoc={55814EA3-DDEE-4788-8B9A-3A52DB952DC8}
@@ -141,14 +142,7 @@ chkids:
       - BSREFID
   output:
     stdout:
-      func: |
-        function (pull_date) {
-          dta$specimen_transmittal %>%
-            select(Subject,SPECID,BSREFID) %>% unique %>%
-            anti_join(entity_ids, by = c("Subject"="ctep_id","SPECID"="rave_spec_id", "BSREFID"="bcr_subspec_id")) %>%
-            select(Subject,SPECID,BSREFID) %>%
-            mutate("Pull date" = pull_date) 
-          }
+      strategy: chkids
       delim: null
 
 entity_ids:
@@ -156,10 +150,7 @@ entity_ids:
     Print out the entity id mapping information
   output:
     stdout:
-      func: |+
-        function (pull_date) {
-          entity_ids
-          }
+      strategy: entity_ids
       delim: null
 ## config for IROC output
 iroc:
@@ -176,24 +167,5 @@ iroc:
   cra_excel: "cra-users.xlsx"
   output:
     cmb_registration_data_for_iroc.txt:
-      func: |+
-        function (pull_date) {
-        cras  <- read_excel(config$cra_excel,1)
-        dta$enrollment %>% left_join(pub_ids, by=c("Subject" = "ctep_id")) %>%
-        select(project, Subject, Site,CTEPID, DSSTDAT_ENROLLMENT_RAW,CTEP_SDC_MED_V10_CD, pub_id,up_id) %>%
-        left_join( dta$shipping_status %>%
-                   select(Subject, EMAIL_SHP) %>%
-                   # inner_join(cras,by=c("EMAIL_SHP" = "Email")) %>%
-                   group_by(Subject) %>%
-                   summarize( CRA = first(EMAIL_SHP)),
-                   by = c("Subject")) %>%
-        transmute("Date Created" = str_interp("${pull_date}"),
-                  "Study" = project,
-                  "Registration Step" = 1,
-                  "Registration Step Description" = str_interp("Enrollment"),
-                  "Site Name" = Site,
-                  "Site CTEP ID" = CTEPID, "CTEP Patient ID" = Subject, "Registering Site Contact" = CRA,
-                  "Current Site Contact" = CRA, "Universal Patient ID" = up_id,
-                  "Registration Date" = DSSTDAT_ENROLLMENT_RAW, "Public Patient ID" = pub_id,
-                  "Cancer Type" = CTEP_SDC_MED_V10_CD)}
+      strategy: iroc
       delim: "|"

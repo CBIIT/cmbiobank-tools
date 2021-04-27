@@ -57,11 +57,13 @@ if (is.null(opts$options$ids_file)) {
 }
 stopifnot(file.exists(opts$options$ids_file))
 
-
 dtadir  <- opts$args[1]
 config  <- config::get(config=opts$options$strategy,file=opts$options$config)
 terms  <- readRDS(opts$options$terms_rds_file)
 pull_date  <- opts$options$pulldate
+
+stopifnot(file.exists(config$strategies_file))
+source(config$strategies_file)
 
 ## munge IDs
 ## this code extremely brittle - depends on the ad hoc format of the IDs excel
@@ -89,13 +91,14 @@ dum <- flatten(map( names(dta), function (x) if (!nrow(dta[[x]])) {dum <- if (x 
 if( !is.null(config$output) ) {
     for( nm in names(config$output) ) {
         fnm  <- nm
+        sg <- config$output[[nm]]
         if (fnm == "stdout") {
-            print.data.frame(eval(str2lang(config$output[[nm]]$func))(pull_date), quote=TRUE,row.names=FALSE)
+            print.data.frame(strategies[[sg$strategy]](pull_date), quote=TRUE,row.names=FALSE)
         }
         else {
             if (file.exists(fnm)) fnm  <- paste(nm, as.double(now()),sep=".");
-            write_delim(eval(str2lang(config$output[[nm]]$func))(pull_date),fnm,
-                        delim=config$output[[nm]]$delim)
+            write_delim(strategies[[sg$strategy]](pull_date),fnm,
+                        delim=sg$delim)
         }
     }
 }
