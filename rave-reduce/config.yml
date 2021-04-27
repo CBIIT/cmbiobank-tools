@@ -25,6 +25,8 @@ default:
 
 ## config for statistics output
 stats:
+  description:
+    Create reduced set of tables that contain information desired by CMB statistician
   xtbls:
     administrative_enrollment: null
     #  adverse_baseline_symptoms:
@@ -130,8 +132,39 @@ stats:
   xcols: null
   output: null
 
+chkids:
+  description: |
+   Report any specimen transmittal entities that are not yet mapped in the BBIT ID file.
+  xtbls:
+    specimen_transmittal:
+      - SPECID
+      - BSREFID
+  output:
+    stdout:
+      func: |
+        function (pull_date) {
+          dta$specimen_transmittal %>%
+            select(Subject,SPECID,BSREFID) %>% unique %>%
+            anti_join(entity_ids, by = c("Subject"="ctep_id","SPECID"="rave_spec_id", "BSREFID"="bcr_subspec_id")) %>%
+            select(Subject,SPECID,BSREFID) %>%
+            mutate("Pull date" = pull_date) 
+          }
+      delim: null
+
+entity_ids:
+  description:
+    Print out the entity id mapping information
+  output:
+    stdout:
+      func: |+
+        function (pull_date) {
+          entity_ids
+          }
+      delim: null
 ## config for IROC output
 iroc:
+  description:
+    Create a pipe-delimited file of patient registration metadata required by IROC
   xtbls:
     administrative_enrollment:
       - CTEPID
@@ -140,16 +173,17 @@ iroc:
       - pub_id
       - up_id
   xcols: null
+  cra_excel: "cra-users.xlsx"
   output:
     cmb_registration_data_for_iroc.txt:
       func: |+
         function (pull_date) {
-        cras  <- read_excel("cra-users.xlsx",1)
-        dta$enrollment %>% inner_join(pub_ids, by=c("Subject" = "ctep_id")) %>%
+        cras  <- read_excel(config$cra_excel,1)
+        dta$enrollment %>% left_join(pub_ids, by=c("Subject" = "ctep_id")) %>%
         select(project, Subject, Site,CTEPID, DSSTDAT_ENROLLMENT_RAW,CTEP_SDC_MED_V10_CD, pub_id,up_id) %>%
         left_join( dta$shipping_status %>%
                    select(Subject, EMAIL_SHP) %>%
-                   inner_join(cras,by=c("EMAIL_SHP" = "Email")) %>%
+                   # inner_join(cras,by=c("EMAIL_SHP" = "Email")) %>%
                    group_by(Subject) %>%
                    summarize( CRA = first(EMAIL_SHP)),
                    by = c("Subject")) %>%

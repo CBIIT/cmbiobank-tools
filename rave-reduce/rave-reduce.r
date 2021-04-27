@@ -70,16 +70,16 @@ pub_ids  <- read_excel(opts$options$ids_file,1)
 pub_spec_ids  <- read_excel(opts$options$ids_file,2)
 pub_subspec_ids  <- read_excel(opts$options$ids_file,3)
 ## regularize the column names
-names(pub_ids)  <- c("rnd","rnd_id","pub_id","ctep_id","up_id","rave_id","ec_id","site_name")
-names(pub_spec_ids)  <- c("log_line","ctep_id","up_id","rave_spec_id","pub_id", "pub_spec_id")
+names(pub_ids)  <- c("rnd","rnd_id","pub_id","ctep_id", "up_id","pub_id2","rave_id","ec_id")
+names(pub_spec_ids)  <- c("log_line","ctep_id","up_id","pub_id","rave_spec_id", "pub_spec_id")
 names(pub_subspec_ids)  <- c("ctep_id","pub_id","pub_spec_id","bcr_subspec_id","pub_subspec_id","log_line")
 ## inner join pub_ids and pub_spec_ids on pub_id to get a useful table (sans unmapped ids)
 ## left join that with pub_subspec_ids to acquire subspecimens where available
 entity_ids <- pub_ids %>% inner_join(pub_spec_ids,by = c("pub_id","ctep_id","up_id")) %>% select( pub_id,ctep_id,up_id,rave_spec_id, pub_spec_id,log_line) %>% left_join(pub_subspec_ids,by=c("pub_id","ctep_id","pub_spec_id"))
-
 files <- grep("CSV",dir(dtadir),value=T) # line assumes csv, other formats poss.
 tbls  <- files %>% str_sub(5,-5)
 dta  <- suppressMessages( map(files, function (x) tibble(read_csv(file.path(dtadir,x)))) )
+
 names(dta)  <- tbls
 ## now dta is a list of all tables, named appropriately (e.g., dta$specimen_tracking_enrollment, etc.)
 
@@ -89,9 +89,14 @@ dum <- flatten(map( names(dta), function (x) if (!nrow(dta[[x]])) {dum <- if (x 
 if( !is.null(config$output) ) {
     for( nm in names(config$output) ) {
         fnm  <- nm
-        if (file.exists(fnm)) fnm  <- paste(nm, as.double(now()),sep=".");
-        write_delim(eval(str2lang(config$output[[nm]]$func))(pull_date),fnm,
-                    delim=config$output[[nm]]$delim)
+        if (fnm == "stdout") {
+            print.data.frame(eval(str2lang(config$output[[nm]]$func))(pull_date), quote=TRUE,row.names=FALSE)
+        }
+        else {
+            if (file.exists(fnm)) fnm  <- paste(nm, as.double(now()),sep=".");
+            write_delim(eval(str2lang(config$output[[nm]]$func))(pull_date),fnm,
+                        delim=config$output[[nm]]$delim)
+        }
     }
 }
 
