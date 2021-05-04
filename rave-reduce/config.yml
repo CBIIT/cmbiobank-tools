@@ -26,7 +26,7 @@ default:
 
 ## config for statistics output
 stats:
-  description:
+  description: |
     Create reduced set of tables that contain information desired by CMB statistician
   xtbls:
     administrative_enrollment: null
@@ -145,16 +145,25 @@ chkids:
       strategy: chkids
       delim: null
 
+update_ids:
+  description: |
+    Map new entities from Rave to random public IDs and store in public_ids.rds
+  output:
+    entity_ids.update.rds:
+      strategy: update_ids
+      delim: null
+
 entity_ids:
-  description:
+  description: |
     Print out the entity id mapping information
   output:
     stdout:
       strategy: entity_ids
       delim: null
+
 ## config for IROC output
 iroc:
-  description:
+  description: |
     Create a pipe-delimited file of patient registration metadata required by IROC
   xtbls:
     administrative_enrollment:
@@ -169,3 +178,12 @@ iroc:
     cmb_registration_data_for_iroc.txt:
       strategy: iroc
       delim: "|"
+
+entity_ids_from_xls:
+  description: |
+    Read ids Excel file to create the entity_ids table (internal public id mapping)
+  ids_excel: "Random IDs.xlsx"
+  output:
+    entity_ids.rds:
+      strategy: entity_ids_from_xls
+      delim: null

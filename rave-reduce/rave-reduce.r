@@ -34,51 +34,52 @@ oparser <- OptionParser(
                     help="config file (default: %default)"),
         make_option(c("-s","--strategy"),action="store",default="default",
                     help="output strategy (default: %default)"),
+        make_option(c("--ids-file"),action="store",default="entity_ids.rds",
+                     help="ids file (rds format) (default: %default)"),
         make_option(c("-d","--pulldate"),action="store", default=tday,
-                    help="pull date to apply to output")
+                    help="pull date to apply to output"),
+        make_option(c("-l","--list"),action="store_true",default=F,
+                    help="list strategies with descriptions")
         ))
 
 opts <- parse_args2(oparser)
 
-## param checking - can do better than this    
-stopifnot(!is.null(opts$args[1]) && dir.exists(opts$args[1]))
+## list strategies - a help function
+if (opts$options$list) {
+    cfg  <- yaml::read_yaml(opts$options$config)
+    cat("rave-reduce strategies (-s):\n")
+    for (nm in setdiff(names(cfg),c("default"))) {
+        cat(str_interp(" ${nm}:\n   ${cfg[[nm]]$description}"))
+    }
+    q(save="no")
+}
+
+## param checking - can do better than this
+#stopifnot(!is.na(opts$args[1]) && dir.exists(opts$args[1]))
 if (is.null(opts$options$config) ) {
     opts$options$config  <- "config.yml"
 }
 stopifnot(file.exists(opts$options$config))
 
-if (is.null(opts$options$terms_rds_file )) {
-    opts$options$terms_rds_file  <- "form-terms.rds"
-}
-stopifnot(file.exists(opts$options$terms_rds_file))
-
 if (is.null(opts$options$ids_file)) {
-    opts$options$ids_file  <- "Random IDs.xlsx"
+    opts$options$ids_file  <- "entity_ids.rds"
 }
-stopifnot(file.exists(opts$options$ids_file))
+
+if (!file.exists(opts$options$ids_file)) {
+    warning(str_interp("IDs file '${opts$options$ids_file}' is not present\n"),
+            immediate.=TRUE)
+} else {
+    entity_ids  <- readRDS(opts$options$ids_file)
+}
 
 dtadir  <- opts$args[1]
 config  <- config::get(config=opts$options$strategy,file=opts$options$config)
-terms  <- readRDS(opts$options$terms_rds_file)
+terms  <- readRDS(config$terms_rds_file)
 pull_date  <- opts$options$pulldate
 
 stopifnot(file.exists(config$strategies_file))
 source(config$strategies_file)
-
-## munge IDs
-## this code extremely brittle - depends on the ad hoc format of the IDs excel
-## rather have an input IDs file that is in the final format (entity_ids) below.
-pub_ids  <- read_excel(opts$options$ids_file,1)
-pub_spec_ids  <- read_excel(opts$options$ids_file,2)
-pub_subspec_ids  <- read_excel(opts$options$ids_file,3)
-## regularize the column names
-names(pub_ids)  <- c("rnd","rnd_id","pub_id","ctep_id", "up_id","pub_id2","rave_id","ec_id")
-names(pub_spec_ids)  <- c("log_line","ctep_id","up_id","pub_id","rave_spec_id", "pub_spec_id")
-names(pub_subspec_ids)  <- c("ctep_id","pub_id","pub_spec_id","bcr_subspec_id","pub_subspec_id","log_line")
-## inner join pub_ids and pub_spec_ids on pub_id to get a useful table (sans unmapped ids)
-## left join that with pub_subspec_ids to acquire subspecimens where available
-entity_ids <- pub_ids %>% inner_join(pub_spec_ids,by = c("pub_id","ctep_id","up_id")) %>% select( pub_id,ctep_id,up_id,rave_spec_id, pub_spec_id,log_line) %>% left_join(pub_subspec_ids,by=c("pub_id","ctep_id","pub_spec_id"))
-files <- grep("CSV",dir(dtadir),value=T) # line assumes csv, other formats poss.
+files <- grep("CSV",dir(dtadir),value=T) # assumes dump in CVS
 tbls  <- files %>% str_sub(5,-5)
 dta  <- suppressMessages( map(files, function (x) tibble(read_csv(file.path(dtadir,x)))) )
 
@@ -94,11 +95,17 @@ if( !is.null(config$output) ) {
         sg <- config$output[[nm]]
         if (fnm == "stdout") {
             print.data.frame(strategies[[sg$strategy]](pull_date), quote=TRUE,row.names=FALSE)
-        }
-        else {
-            if (file.exists(fnm)) fnm  <- paste(nm, as.double(now()),sep=".");
-            write_delim(strategies[[sg$strategy]](pull_date),fnm,
-                        delim=sg$delim)
+        } else {
+            fnm_split  <- strsplit(fnm,"\\.")[[1]]
+            if (file.exists(fnm)) {
+                fnm  <- str_c( append(fnm_split, as.double(now()),length(fnm_split)-1),collapse=".")
+            }
+            if (last(fnm_split) == "rds") {
+                saveRDS(strategies[[sg$strategy]](pull_date), fnm)
+            } else {
+                write_delim(strategies[[sg$strategy]](pull_date),fnm,
+                            delim=sg$delim)
+            }
         }
     }
 }
