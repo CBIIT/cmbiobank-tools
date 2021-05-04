@@ -38,7 +38,7 @@ data reduction tasks on CMB Rave data dumps.
 ## Structure
 
 The script itself is a mini front-end for tasks that are specified 
-and configured in an accompanying [config.yml](./rave-reduce/config.yml) file. 
+and configured in an accompanying [config.yml](/rave-reduce/config.yml) file. 
 
 ### config.yml
 
