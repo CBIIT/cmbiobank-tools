@@ -152,6 +152,9 @@ update_ids:
     entity_ids.update.rds:
       strategy: update_ids
       delim: null
+    entity_ids.update.tsv:
+      strategy: entity_ids_upd
+      delim: "\t"
 
 entity_ids:
   description: |
@@ -184,6 +187,6 @@ entity_ids_from_xls:
     Read ids Excel file to create the entity_ids table (internal public id mapping)
   ids_excel: "Random IDs.xlsx"
   output:
-    entity_ids.rds:
+    entity_ids.xls.rds:
       strategy: entity_ids_from_xls
       delim: null

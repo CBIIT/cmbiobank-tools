@@ -1,5 +1,6 @@
 strategies <- list(
     chkids = function (pull_date) {
+        stopifnot(!is.null(dta$specimen_transmittal))
         dta$specimen_transmittal %>%
         select(Subject,SPECID,BSREFID) %>% unique %>%
         anti_join(entity_ids, by = c("Subject"="ctep_id","SPECID"="rave_spec_id", "BSREFID"="bcr_subspec_id")) %>%
@@ -42,7 +43,11 @@ strategies <- list(
         names(pub_subspec_ids)  <- c("ctep_id","pub_id","pub_spec_id","bcr_subspec_id","pub_subspec_id","log_line")
         ## inner join pub_ids and pub_spec_ids on pub_id to get a useful table (sans unmapped ids)
         ## left join that with pub_subspec_ids to acquire subspecimens where available
-        entity_ids <- pub_ids %>% left_join(pub_spec_ids,by = c("pub_id","ctep_id","up_id")) %>% select( pub_id,ctep_id,up_id,rave_spec_id, pub_spec_id,log_line) %>% left_join(pub_subspec_ids,by=c("pub_id","ctep_id","pub_spec_id"))
+        entity_ids <- pub_ids %>%
+            left_join(pub_spec_ids,by = c("pub_id","ctep_id","up_id")) %>%
+            select( pub_id,ctep_id,up_id,rave_spec_id, pub_spec_id) %>%
+            left_join(pub_subspec_ids,by=c("pub_id","ctep_id","pub_spec_id")) %>%
+            mutate( pull_date = map_chr(ctep_id, function(x)if(is.na(x)) {NA} else {pull_date})) %>% select( -log_line)
     },
     update_ids = function (pull_date) {
         # orphans - no pub_id or pub_spec_id yet
@@ -66,7 +71,9 @@ strategies <- list(
             group_by(Subject) %>%
             summarize(USUBJID_DRV=first(USUBJID_DRV)) %>%
             mutate(num =row_number()) %>%
-            inner_join(unused %>% mutate(num = row_number())) %>% select(-num)
+            inner_join(unused %>% mutate(num = row_number()), by=c("num")) %>% select(-num)
+        ## remove the newly assigned pubids from entity_ids
+        entity_ids  <- entity_ids %>% anti_join(assgn, by=c("pub_id"))
         ## set the newbies' pub_ids in orphans (adding pub_id column to orphans)
         orphans_a <- bind_rows(
             orphans %>%
@@ -103,38 +110,41 @@ strategies <- list(
         ## now handle subspecimen assignment
         nxt  <- entity_ids %>%
             select(pub_spec_id,pub_subspec_id) %>%
-            group_by(pub_spec_id) %>% arrange(pub_spec_id) %>%
-            summarize(pub_subspec_id = last(pub_subspec_id)) %>%
+            group_by(pub_spec_id) %>% arrange(pub_spec_id,desc(pub_subspec_id)) %>%
+            summarize(pub_subspec_id = first(pub_subspec_id)) %>%
             mutate( ssid = as.integer(str_extract(pub_subspec_id,"[0-9]+$"))+1) %>%
             mutate_at(vars(ssid),list(function(x)if_else(is.na(x),1,x)))
         next_ssid  <- NULL
         next_ssid[nxt$pub_spec_id] <- nxt$ssid
         next_ssid_for  <- function(ps_id) {
-            n <- next_ssid[ps_id] ;
-            if (is.na(n)) {
-                next_ssid[ps_id] <<- 1
-                n  <- 1
-            } else {
-                next_ssid[ps_id]  <<- next_ssid[ps_id]+1
-                n  <- next_ssid[ps_id]
+            if (is.na(next_ssid[ps_id])) {
+                next_ssid[ps_id]  <- 1
             }
+            n  <- next_ssid[ps_id]
+            next_ssid[ps_id]  <<- next_ssid[ps_id]+1
             str_c(ps_id,str_pad(n,2,"left",0),sep="-") }
         orphans_ss  <- orphans_b %>%
             arrange(pub_spec_id,BSREFID) %>%
             add_column(
                 pub_subspec_id = sapply(
                 (orphans_b %>% arrange(pub_spec_id,BSREFID))$pub_spec_id,
-                next_ssid_for, USE.NAMES=F) )
-        entity_ids_upd  <- orphans_ss %>%
+                next_ssid_for, USE.NAMES=F) ) %>%
+            mutate( pull_date = pull_date )
+        entity_ids_upd  <<- orphans_ss %>%
             full_join(entity_ids, by=c("Subject"="ctep_id",
                                        "USUBJID_DRV"="up_id",
                                        "SPECID"="rave_spec_id",
                                        "BSREFID"="bcr_subspec_id",
                                        "pub_id","pub_spec_id")) %>%
             mutate( pub_subspec_id = coalesce(pub_subspec_id.x,pub_subspec_id.y)) %>%
-            select( -pub_subspec_id.x,-pub_subspec_id.y, -log_line.x,-log_line.y) %>%
+            mutate( pull_date = coalesce(pull_date.x,pull_date.y)) %>%
+            select( -pub_subspec_id.x,-pub_subspec_id.y, -pull_date.x,-pull_date.y) %>%
             rename( ctep_id = Subject, up_id = USUBJID_DRV, rave_spec_id = SPECID, bcr_subspec_id = BSREFID)
-    }
+        stopifnot( length((entity_ids_upd %>% filter(!is.na(pub_subspec_id)))$pub_subspec_id) ==
+                   length((entity_ids_upd %>% filter(!is.na(pub_subspec_id)))$pub_subspec_id %>% unique) )
+        entity_ids_upd
+    },
+    entity_ids_upd = function (pull_date) entity_ids_upd
 )
 
 
