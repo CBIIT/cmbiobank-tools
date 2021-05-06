@@ -10,17 +10,24 @@ strategies <- list(
     entity_ids = function (pull_date) {
         entity_ids
     },
-    iroc = function (pull_date) {
+    iroc = function (pulldate) {
         cras  <- read_excel(config$cra_excel,1)
+        pub_ids  <- entity_ids %>%
+            filter(!is.na(ctep_id)) %>%
+            group_by(ctep_id) %>%
+            select(pub_id,up_id,pull_date) %>%
+            mutate( date = dmy(pull_date) ) %>%
+            arrange(ctep_id, date) %>%
+            summarize( pub_id = first(pub_id), up_id = first(up_id), pull_date=first(pull_date), date = first(date) )
         dta$enrollment %>% left_join(pub_ids, by=c("Subject" = "ctep_id")) %>%
-            select(project, Subject, Site,CTEPID, DSSTDAT_ENROLLMENT_RAW,CTEP_SDC_MED_V10_CD, pub_id,up_id) %>%
+            select(project, Subject, Site,CTEPID, DSSTDAT_ENROLLMENT_RAW,CTEP_SDC_MED_V10_CD, pub_id,up_id,pull_date) %>%
             left_join( dta$shipping_status %>%
               select(Subject, EMAIL_SHP) %>%
                                         # inner_join(cras,by=c("EMAIL_SHP" = "Email")) %>%
               group_by(Subject) %>%
               summarize( CRA = first(EMAIL_SHP)),
               by = c("Subject")) %>%
-        transmute("Date Created" = str_interp("${pull_date}"),
+            transmute("Date Created" = pull_date, #str_interp("${pull_date}"),
                   "Study" = project,
                   "Registration Step" = 1,
                   "Registration Step Description" = str_interp("Enrollment"),
@@ -50,13 +57,17 @@ strategies <- list(
             mutate( pull_date = map_chr(ctep_id, function(x)if(is.na(x)) {NA} else {pull_date})) %>% select( -log_line)
     },
     update_ids = function (pull_date) {
-        # orphans - no pub_id or pub_spec_id yet
+        ## patients can be enrolled but without specimen transmittal - 
+        ## need to look at enrollment table too
+        ## orphans - no pub_id or pub_spec_id yet
+        no_specimens  <- dta$enrollment %>% inner_join(dta$administrative_enrollment,by=c("Subject")) %>% select(Subject,USUBJID) %>% anti_join(dta$specimen_transmittal) %>% rename(USUBJID_DRV = USUBJID)
         orphans <- dta$specimen_transmittal %>%
             select(Subject,SPECID,BSREFID,USUBJID_DRV) %>% unique %>%
             anti_join(entity_ids, by = c("Subject"="ctep_id",
                                          "SPECID"="rave_spec_id",
                                          "BSREFID"="bcr_subspec_id",
-                                         "USUBJID_DRV"="up_id"))
+                                         "USUBJID_DRV"="up_id")) %>%
+            full_join(no_specimens)
         ## newbies - new patients without pub_id
         newbies  <- orphans %>% anti_join(entity_ids,
                                           by=c("Subject"="ctep_id",
