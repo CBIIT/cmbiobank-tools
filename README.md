@@ -12,3 +12,5 @@ No CMB data as such appears in this repository.
 Command line tool in R for reducing data in downloaded Medidata Rave tables 
 to various subsets and formats.
 
+* [rave-schema-info](/rave-schema-info)
+
