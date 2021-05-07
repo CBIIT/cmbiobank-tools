@@ -14,3 +14,4 @@ to various subsets and formats.
 
 * [rave-schema-info](/rave-schema-info)
 
+Information related to the Rave table schema.
