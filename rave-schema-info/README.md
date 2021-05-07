@@ -9,3 +9,4 @@ For each form, data entry slots are given a short name which corresponds to the 
 
 This [Excel spreadsheet](./10323-form-terms-V3.txt) contains a mapping of these short names to human readable names, the form in which that slot appears, and the page number of the form in the PDF description of all CRFs.
 
+The file `form-terms.rds` is a rendering of this spreadsheet in an R-readable [RDS](https://cran.r-project.org/doc/manuals/r-release/R-ints.html#Serialization-Formats) format.
