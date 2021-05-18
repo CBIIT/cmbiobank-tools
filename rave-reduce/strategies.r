@@ -134,14 +134,16 @@ strategies <- list(
             n  <- next_ssid[ps_id]
             next_ssid[ps_id]  <<- next_ssid[ps_id]+1
             str_c(ps_id,str_pad(n,2,"left",0),sep="-") }
-        orphans_ss  <- orphans_b %>%
-            arrange(pub_spec_id,BSREFID) %>%
-            add_column(
-                pub_subspec_id = sapply(
-                (orphans_b %>% arrange(pub_spec_id,BSREFID))$pub_spec_id,
-                next_ssid_for, USE.NAMES=F) ) %>%
+        orphans_b  <- orphans_b %>% arrange(pub_spec_id,BSREFID)
+        ## do not provide a public subspec id to any rec without a BSREFID:
+        ss_col  <- map2_chr(
+            orphans_b$pub_spec_id,
+            orphans_b$BSREFID,
+            function (x,y) if (is.na(y)) { NA } else { next_ssid_for(x) })
+        orphans_ss  <- orphans_b %>% 
+            add_column( pub_subspec_id = ss_col ) %>%
             mutate( pull_date = pull_date )
-        entity_ids_upd  <<- orphans_ss %>%
+        entity_ids_upd  <<- orphans_ss %>% 
             full_join(entity_ids, by=c("Subject"="ctep_id",
                                        "USUBJID_DRV"="up_id",
                                        "SPECID"="rave_spec_id",

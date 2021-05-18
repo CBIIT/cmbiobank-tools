@@ -79,7 +79,7 @@ pull_date  <- opts$options$pulldate
 
 stopifnot(file.exists(config$strategies_file))
 source(config$strategies_file)
-files <- grep("CSV",dir(dtadir),value=T) # assumes dump in CVS
+files <- grep("CSV",dir(dtadir),value=T) # assumes dump in CSV
 tbls  <- files %>% str_sub(5,-5)
 dta  <- suppressMessages( map(files, function (x) tibble(read_csv(file.path(dtadir,x)))) )
 
