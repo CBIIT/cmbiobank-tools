@@ -36,6 +36,8 @@ oparser <- OptionParser(
                     help="output strategy (default: %default)"),
         make_option(c("--ids-file"),action="store",default="entity_ids.rds",
                      help="ids file (rds format) (default: %default)"),
+        make_option(c("--bcr-file"),action="store",default="NONE",
+                     help="bcr report file (excel format) (default: NONE)"),
         make_option(c("-d","--pulldate"),action="store", default=tday,
                     help="pull date to apply to output"),
         make_option(c("-l","--list"),action="store_true",default=F,
@@ -70,6 +72,18 @@ if (!file.exists(opts$options$ids_file)) {
             immediate.=TRUE)
 } else {
     entity_ids  <- readRDS(opts$options$ids_file)
+}
+
+if (is.null(opts$options$bcr_file) | (opts$options$bcr_file == "NONE")) {
+    bcr_report  <- NULL
+} else {
+    if (!file.exists(opts$options$bcr_file)) {
+        warning(str_interp("BCR file '${opts$options$bcr_file}' is not found\n"),
+            immediate.=TRUE)
+        bcr_report  <- NULL
+    } else {
+        bcr_report  <- read_excel(opts$options$bcr_file)
+    }
 }
 
 dtadir  <- opts$args[1]

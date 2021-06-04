@@ -11,6 +11,8 @@ strategies <- list(
         entity_ids
     },
     iroc = function (pulldate) {
+        ## argument 'pulldate' is ignored in this function
+        ## pull_date from the entity_ids file is used
         cras  <- read_excel(config$cra_excel,1)
         pub_ids  <- entity_ids %>%
             filter(!is.na(ctep_id)) %>%
@@ -155,10 +157,61 @@ strategies <- list(
             rename( ctep_id = Subject, up_id = USUBJID_DRV, rave_spec_id = SPECID, bcr_subspec_id = BSREFID)
         stopifnot( length((entity_ids_upd %>% filter(!is.na(pub_subspec_id)))$pub_subspec_id) ==
                    length((entity_ids_upd %>% filter(!is.na(pub_subspec_id)))$pub_subspec_id %>% unique) )
+        if (!is.null(bcr_report)) {
+            cat("updating bcr-only subspecimens\n",file=stderr())
+            strategies$update_bcr_ids(pull_date)
+        } else {
+            cat("bcr report not provided\n")
+        }
         entity_ids_upd
     },
-    entity_ids_upd = function (pull_date) entity_ids_upd
+    entity_ids_upd = function (pull_date) entity_ids_upd,
+    update_bcr_ids = function (pulldate) {
+        orphans_bcr  <- bcr_report %>% anti_join(entity_ids, by = c("BSI ID" = "bcr_subspec_id")) %>%
+            rename( c("rave_spec_id"="Original Id","bcr_subspec_id" = "BSI ID") ) %>%
+            transmute( rave_spec_id, bcr_subspec_id) %>% 
+            inner_join( entity_ids %>% select(ctep_id, up_id, rave_spec_id,pub_id, pub_spec_id) %>% unique ) %>%
+            arrange(pub_spec_id, bcr_subspec_id) 
+
+        nxt  <- entity_ids %>%
+            select(pub_spec_id,pub_subspec_id) %>%
+            group_by(pub_spec_id) %>% arrange(pub_spec_id,desc(pub_subspec_id)) %>%
+            summarize(pub_subspec_id = first(pub_subspec_id)) %>%
+            mutate( ssid = as.integer(str_extract(pub_subspec_id,"[0-9]+$"))+1) %>%
+            mutate_at(vars(ssid),list(function(x)if_else(is.na(x),1,x)))
+        next_ssid  <- NULL
+        next_ssid[nxt$pub_spec_id] <- nxt$ssid
+        next_ssid_for  <- function(ps_id) {
+            if (is.na(next_ssid[ps_id])) {
+                next_ssid[ps_id]  <- 1
+            }
+            n  <- next_ssid[ps_id]
+            next_ssid[ps_id]  <<- next_ssid[ps_id]+1
+            str_c(ps_id,str_pad(n,2,"left",0),sep="-") }
+        ss_col  <- map2_chr(
+            orphans_bcr$pub_spec_id,
+            orphans_bcr$bcr_subspec_id,
+            function (x,y) if (is.na(y)) { NA } else { next_ssid_for(x) })
+        orphans_bcr  <-  orphans_bcr %>%
+            add_column(pub_subspec_id = ss_col) %>%
+            mutate(pull_date = pulldate)
+        entity_ids_upd  <<- bind_rows(entity_ids,orphans_bcr) %>% arrange(pub_subspec_id)
+    },
+   slide_table = function (pull_date) {
+       slide_mapping  <- entity_ids %>%
+           inner_join(bcr_report, by = c("bcr_subspec_id" = "BSI ID")) %>%
+           rename(c("material_type" = "Material Type",
+                    "anatomic_site" = "Anatomic Site",
+                    "anatomic_site_detail" = "Anatomic Site Detail",
+                    "fixative" ="Fixative")) %>%
+           select(pub_id, pub_spec_id, pub_subspec_id, bcr_subspec_id,
+                  material_type, anatomic_site, anatomic_site_detail,
+                  fixative, pull_date) %>%
+           filter( grepl("Slide",material_type) )
+       slide_mapping
+    }
 )
+
 
 
 

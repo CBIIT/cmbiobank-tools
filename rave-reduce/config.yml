@@ -147,7 +147,7 @@ chkids:
 
 update_ids:
   description: |
-    Map new entities from Rave to random public IDs and store in public_ids.rds
+    Map new entities from Rave to random public IDs and store in entity_ids.update.rds
   output:
     entity_ids.update.rds:
       strategy: update_ids
@@ -181,7 +181,15 @@ iroc:
     cmb_registration_data_for_iroc.txt:
       strategy: iroc
       delim: "|"
-
+slide_table:
+  description: |
+    Create a table of subspecimen IDs corresponding to slides, along with some metadata about the slides
+  xtbls: null
+  xcols: null
+  output:
+    slide_data_for_uams.txt:
+      strategy: slide_table
+      delim: "\t"
 entity_ids_from_xls:
   description: |
     Read ids Excel file to create the entity_ids table (internal public id mapping)
