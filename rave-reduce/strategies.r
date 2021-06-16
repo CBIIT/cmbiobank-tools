@@ -27,6 +27,7 @@ strategies <- list(
               select(Subject, EMAIL_SHP) %>%
                                         # inner_join(cras,by=c("EMAIL_SHP" = "Email")) %>%
               group_by(Subject) %>%
+              filter( !grepl("@vai",EMAIL_SHP) ) %>%
               summarize( CRA = first(EMAIL_SHP)),
               by = c("Subject")) %>%
             transmute("Date Created" = pull_date, #str_interp("${pull_date}"),
@@ -204,7 +205,7 @@ strategies <- list(
                     "anatomic_site" = "Anatomic Site",
                     "anatomic_site_detail" = "Anatomic Site Detail",
                     "fixative" ="Fixative")) %>%
-           select(pub_id, pub_spec_id, pub_subspec_id, bcr_subspec_id,
+           select(ctep_id, pub_id, pub_spec_id, pub_subspec_id, bcr_subspec_id,
                   material_type, anatomic_site, anatomic_site_detail,
                   fixative, pull_date) %>%
            filter( grepl("Slide",material_type) )
