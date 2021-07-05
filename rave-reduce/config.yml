@@ -133,7 +133,7 @@ stats:
   xcols: null
   output: null
 
-chkids:
+check_ids:
   description: |
    Report any specimen transmittal entities that are not yet mapped in the BBIT ID file.
   xtbls:
@@ -142,7 +142,7 @@ chkids:
       - BSREFID
   output:
     stdout:
-      strategy: chkids
+      strategy: check_ids
       delim: null
 
 update_ids:

@@ -1,5 +1,5 @@
 strategies <- list(
-    chkids = function (pull_date) {
+    check_ids = function (pull_date) {
         stopifnot(!is.null(dta$specimen_transmittal))
         dta$specimen_transmittal %>%
         select(Subject,SPECID,BSREFID) %>% unique %>%
@@ -124,9 +124,10 @@ strategies <- list(
         ## now handle subspecimen assignment
         nxt  <- entity_ids %>%
             select(pub_spec_id,pub_subspec_id) %>%
-            group_by(pub_spec_id) %>% arrange(pub_spec_id,desc(pub_subspec_id)) %>%
-            summarize(pub_subspec_id = first(pub_subspec_id)) %>%
-            mutate( ssid = as.integer(str_extract(pub_subspec_id,"[0-9]+$"))+1) %>%
+            group_by(pub_spec_id) %>%
+            mutate( ssid =  as.integer(str_extract(pub_subspec_id,"[0-9]+$"))+1) %>%
+            arrange(desc(ssid)) %>%
+            summarize(pub_subspec_id = first(pub_subspec_id),ssid = first(ssid)) %>%
             mutate_at(vars(ssid),list(function(x)if_else(is.na(x),1,x)))
         next_ssid  <- NULL
         next_ssid[nxt$pub_spec_id] <- nxt$ssid
@@ -156,14 +157,15 @@ strategies <- list(
             mutate( pull_date = coalesce(pull_date.x,pull_date.y)) %>%
             select( -pub_subspec_id.x,-pub_subspec_id.y, -pull_date.x,-pull_date.y) %>%
             rename( ctep_id = Subject, up_id = USUBJID_DRV, rave_spec_id = SPECID, bcr_subspec_id = BSREFID)
-        stopifnot( length((entity_ids_upd %>% filter(!is.na(pub_subspec_id)))$pub_subspec_id) ==
-                   length((entity_ids_upd %>% filter(!is.na(pub_subspec_id)))$pub_subspec_id %>% unique) )
         if (!is.null(bcr_report)) {
             cat("updating bcr-only subspecimens\n",file=stderr())
             strategies$update_bcr_ids(pull_date)
         } else {
             cat("bcr report not provided\n")
         }
+        # throw if there are duplicate subspec ids
+        stopifnot( length((entity_ids_upd %>% filter(!is.na(pub_subspec_id)))$pub_subspec_id) ==
+                   length((entity_ids_upd %>% filter(!is.na(pub_subspec_id)))$pub_subspec_id %>% unique) )
         entity_ids_upd
     },
     entity_ids_upd = function (pull_date) entity_ids_upd,
@@ -176,9 +178,10 @@ strategies <- list(
 
         nxt  <- entity_ids %>%
             select(pub_spec_id,pub_subspec_id) %>%
-            group_by(pub_spec_id) %>% arrange(pub_spec_id,desc(pub_subspec_id)) %>%
-            summarize(pub_subspec_id = first(pub_subspec_id)) %>%
-            mutate( ssid = as.integer(str_extract(pub_subspec_id,"[0-9]+$"))+1) %>%
+            group_by(pub_spec_id) %>% 
+            mutate( ssid =  as.integer(str_extract(pub_subspec_id,"[0-9]+$"))+1) %>%
+            arrange(desc(ssid)) %>%
+            summarize(pub_subspec_id = first(pub_subspec_id),ssid = first(ssid)) %>%
             mutate_at(vars(ssid),list(function(x)if_else(is.na(x),1,x)))
         next_ssid  <- NULL
         next_ssid[nxt$pub_spec_id] <- nxt$ssid

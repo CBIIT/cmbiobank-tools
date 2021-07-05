@@ -61,7 +61,7 @@ if (opts$options$list) {
 if (is.null(opts$options$config) ) {
     opts$options$config  <- "config.yml"
 }
-stopifnot(file.exists(opts$options$config))
+stopifnot(file.exists(opts$options$config)) # no config file available
 
 if (is.null(opts$options$ids_file)) {
     opts$options$ids_file  <- "entity_ids.rds"
@@ -91,9 +91,12 @@ config  <- config::get(config=opts$options$strategy,file=opts$options$config)
 terms  <- readRDS(config$terms_rds_file)
 pull_date  <- opts$options$pulldate
 
-stopifnot(file.exists(config$strategies_file))
+stopifnot(!is.null(config$description)) # no such strategy
+stopifnot(file.exists(config$strategies_file)) # no strategies.r available
 source(config$strategies_file)
+
 files <- grep("CSV",dir(dtadir),value=T) # assumes dump in CSV
+stopifnot( length(files) > 0 ) # stop if dtadir has no CSV files
 tbls  <- files %>% str_sub(5,-5)
 dta  <- suppressMessages( map(files, function (x) tibble(read_csv(file.path(dtadir,x)))) )
 
