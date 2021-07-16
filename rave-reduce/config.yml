@@ -11,6 +11,9 @@ default:
 
   # table of 10323 CRF terms, human-readable term names, the source CRF names, and corresponding Rave table names
   # (in R serialized format)
+  # these are file names - they will be searched for in the directory indicated by the
+  # --config-dir option of rave-reduce
+  # (default is /usr/local/rave-reduce)
   terms_rds_file: form-terms.rds
   strategies_file: strategies.r
   

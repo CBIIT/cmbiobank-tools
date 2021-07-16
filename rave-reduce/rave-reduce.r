@@ -1,4 +1,4 @@
-#!/usr/bin/env Rscript --slave
+#!/usr/bin/env -S Rscript --slave
 suppressPackageStartupMessages(library(tidyverse))
 suppressPackageStartupMessages(library(lubridate))
 suppressPackageStartupMessages(library(readxl))
@@ -30,14 +30,16 @@ tday <- suppressMessages(stamp("28 Feb 1956"))(today())
 oparser <- OptionParser(
     usage = "%prog dumpdir",
     option_list = list(
+        make_option(c("--config-dir"),action="store",default="/usr/local/rave-reduce",
+                    help="configuration directory (location of config.yml, strategies.r; default: %default"),
         make_option(c("-c","--config"),action="store",default="config.yml",
-                    help="config file (default: %default)"),
+                    help="config file name (default: %default)"),
         make_option(c("-s","--strategy"),action="store",default="default",
                     help="output strategy (default: %default)"),
         make_option(c("--ids-file"),action="store",default="entity_ids.rds",
                      help="ids file (rds format) (default: %default)"),
         make_option(c("--bcr-file"),action="store",default="NONE",
-                     help="bcr report file (excel format) (default: NONE)"),
+                    help="bcr report file (excel format) (default: NONE)"),
         make_option(c("-d","--pulldate"),action="store", default=tday,
                     help="pull date to apply to output"),
         make_option(c("-l","--list"),action="store_true",default=F,
@@ -61,7 +63,7 @@ if (opts$options$list) {
 if (is.null(opts$options$config) ) {
     opts$options$config  <- "config.yml"
 }
-stopifnot(file.exists(opts$options$config)) # no config file available
+stopifnot(file.exists(file.path(opts$options$config_dir,opts$options$config))) # no config file available
 
 if (is.null(opts$options$ids_file)) {
     opts$options$ids_file  <- "entity_ids.rds"
@@ -87,13 +89,13 @@ if (is.null(opts$options$bcr_file) | (opts$options$bcr_file == "NONE")) {
 }
 
 dtadir  <- opts$args[1]
-config  <- config::get(config=opts$options$strategy,file=opts$options$config)
-terms  <- readRDS(config$terms_rds_file)
+config  <- config::get(config=opts$options$strategy,file=file.path(opts$options$config_dir,opts$options$config))
+terms  <- readRDS(file.path(opts$options$config_dir,config$terms_rds_file))
 pull_date  <- opts$options$pulldate
 
 stopifnot(!is.null(config$description)) # no such strategy
-stopifnot(file.exists(config$strategies_file)) # no strategies.r available
-source(config$strategies_file)
+stopifnot(file.exists(file.path(opts$options$config_dir,config$strategies_file))) # no strategies.r available
+source(file.path(opts$options$config_dir,config$strategies_file))
 
 files <- grep("CSV",dir(dtadir),value=T) # assumes dump in CSV
 stopifnot( length(files) > 0 ) # stop if dtadir has no CSV files
