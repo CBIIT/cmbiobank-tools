@@ -48,21 +48,12 @@ oparser <- OptionParser(
 
 opts <- parse_args2(oparser)
 
-## list strategies - a help function
-if (opts$options$list) {
-    cfg  <- yaml::read_yaml(opts$options$config)
-    cat("rave-reduce strategies (-s):\n")
-    for (nm in setdiff(names(cfg),c("default"))) {
-        cat(str_interp(" ${nm}:\n   ${cfg[[nm]]$description}"))
-    }
-    q(save="no")
-}
-
 ## param checking - can do better than this
 #stopifnot(!is.na(opts$args[1]) && dir.exists(opts$args[1]))
 if (is.null(opts$options$config) ) {
     opts$options$config  <- "config.yml"
 }
+
 stopifnot(file.exists(file.path(opts$options$config_dir,opts$options$config))) # no config file available
 
 if (is.null(opts$options$ids_file)) {
@@ -86,6 +77,16 @@ if (is.null(opts$options$bcr_file) | (opts$options$bcr_file == "NONE")) {
     } else {
         bcr_report  <- read_excel(opts$options$bcr_file)
     }
+}
+
+## list strategies - a help function
+if (opts$options$list) {
+    cfg  <- yaml::read_yaml(file.path(opts$options$config_dir,opts$options$config))
+    cat("rave-reduce strategies (-s):\n")
+    for (nm in setdiff(names(cfg),c("default"))) {
+        cat(str_interp(" ${nm}:\n   ${cfg[[nm]]$description}"))
+    }
+    q(save="no")
 }
 
 dtadir  <- opts$args[1]
