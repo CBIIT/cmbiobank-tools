@@ -1,5 +1,13 @@
+need_files  <- function(){
+    if (length(files)==0) {
+        cat(str_interp("this strategy requires a path containing CSV files (for arg1)\n"))
+        q(save="no")
+    }
+}
+            
 strategies <- list(
     check_ids = function (pull_date) {
+        need_files()
         stopifnot(!is.null(dta$specimen_transmittal))
         dta$specimen_transmittal %>%
         select(Subject,SPECID,BSREFID) %>% unique %>%
@@ -8,9 +16,15 @@ strategies <- list(
         mutate("Pull date" = pull_date) 
     },
     entity_ids = function (pull_date) {
-        entity_ids
+        dum  <- entity_ids %>% arrange( pub_subspec_id ) %>% filter( !is.na(ctep_id) )
+        if (is.null(outfile)) {
+            dum
+        } else {
+            write_excel_csv(dum, outfile)
+        }
     },
     iroc = function (pulldate) {
+        need_files()
         ## argument 'pulldate' is ignored in this function
         ## pull_date from the entity_ids file is used
         cras  <- read_excel(config$cra_excel,1)
@@ -60,6 +74,7 @@ strategies <- list(
             mutate( pull_date = map_chr(ctep_id, function(x)if(is.na(x)) {NA} else {pull_date})) %>% select( -log_line)
     },
     update_ids = function (pull_date) {
+        need_files()
         ## patients can be enrolled but without specimen transmittal - 
         ## need to look at enrollment table too
         ## orphans - no pub_id or pub_spec_id yet
@@ -154,12 +169,13 @@ strategies <- list(
                                        "BSREFID"="bcr_subspec_id",
                                        "pub_id","pub_spec_id")) %>%
             mutate( pub_subspec_id = coalesce(pub_subspec_id.x,pub_subspec_id.y)) %>%
-            mutate( pull_date = coalesce(pull_date.x,pull_date.y)) %>%
+            ##mutate( pull_date = coalesce(pull_date.x,pull_date.y)) %>%
+            mutate( pull_date = if_else(!is.na(pull_date.y),pull_date.y,pull_date.x)) %>%
             select( -pub_subspec_id.x,-pub_subspec_id.y, -pull_date.x,-pull_date.y) %>%
             rename( ctep_id = Subject, up_id = USUBJID_DRV, rave_spec_id = SPECID, bcr_subspec_id = BSREFID)
         if (!is.null(bcr_report)) {
             cat("updating bcr-only subspecimens\n",file=stderr())
-            strategies$update_bcr_ids(pull_date)
+            strategies$update_bcr_ids(bcr_pull_date)
         } else {
             cat("bcr report not provided\n")
         }
@@ -204,14 +220,19 @@ strategies <- list(
    slide_table = function (pull_date) {
        slide_mapping  <- entity_ids %>%
            inner_join(bcr_report, by = c("bcr_subspec_id" = "BSI ID")) %>%
-           rename(c("material_type" = "Material Type",
-                    "anatomic_site" = "Anatomic Site",
-                    "anatomic_site_detail" = "Anatomic Site Detail",
-                    "fixative" ="Fixative")) %>%
+           inner_join(
+               dta$enrollment %>% select( Subject, CTEP_SDC_MED_V10_CD ) %>%
+               group_by(Subject, CTEP_SDC_MED_V10_CD),
+               by=c("ctep_id" = "Subject")
+           ) %>%
+           rename(c( "anatomic_site" = "Anatomic Site",
+                    "material_type" = "Material Type",
+                    "clinical_diagnosis" = "CTEP_SDC_MED_V10_CD")) %>%
            select(ctep_id, pub_id, pub_spec_id, pub_subspec_id, bcr_subspec_id,
-                  material_type, anatomic_site, anatomic_site_detail,
-                  fixative, pull_date) %>%
-           filter( grepl("Slide",material_type) )
+                  material_type, anatomic_site, clinical_diagnosis, pull_date) %>%
+           filter( grepl("Slide",material_type) ) %>%
+           select(-material_type)
+       ## final table should meet reqs as of tori email 7/2/21
        slide_mapping
     }
 )

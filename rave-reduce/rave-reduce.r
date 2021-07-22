@@ -40,8 +40,12 @@ oparser <- OptionParser(
                      help="ids file (rds format) (default: %default)"),
         make_option(c("--bcr-file"),action="store",default="NONE",
                     help="bcr report file (excel format) (default: NONE)"),
+        make_option(c("--bcr-date"),action="store",default=NULL,
+                    help="date of bcr report file: 'dd MMM yyyy'"),
         make_option(c("-d","--pulldate"),action="store", default=tday,
-                    help="pull date to apply to output"),
+                    help="pull date to apply to output: 'dd MMM yyyy'"),
+        make_option(c("-o","--outfile"),action="store", default=NULL,
+                    help="specify output filename for certain strategies"),
         make_option(c("-l","--list"),action="store_true",default=F,
                     help="list strategies with descriptions")
         ))
@@ -79,6 +83,8 @@ if (is.null(opts$options$bcr_file) | (opts$options$bcr_file == "NONE")) {
     }
 }
 
+outfile  <-  opts$options$outfile
+
 ## list strategies - a help function
 if (opts$options$list) {
     cfg  <- yaml::read_yaml(file.path(opts$options$config_dir,opts$options$config))
@@ -93,21 +99,33 @@ dtadir  <- opts$args[1]
 config  <- config::get(config=opts$options$strategy,file=file.path(opts$options$config_dir,opts$options$config))
 terms  <- readRDS(file.path(opts$options$config_dir,config$terms_rds_file))
 pull_date  <- opts$options$pulldate
+bcr_pull_date  <- if (is.null(opts$options$bcr_date)) { pull_date } else { opts$options$bcr_date }
+
+if (is.null(config$description)) {
+    if (!(opts$options$strategy=="default")) {
+        cat(str_interp("error: no such strategy '${opts$options$strategy}'; use -l to list strategies\n"))
+    }
+    else {
+        cat(str_interp("no strategy selected; use -s, or -l to list strategies\n"));
+    }
+    q(save="no")
+}
 
 stopifnot(!is.null(config$description)) # no such strategy
 stopifnot(file.exists(file.path(opts$options$config_dir,config$strategies_file))) # no strategies.r available
 source(file.path(opts$options$config_dir,config$strategies_file))
 
+## this sets up some variables used in strategies.r
 files <- grep("CSV",dir(dtadir),value=T) # assumes dump in CSV
-stopifnot( length(files) > 0 ) # stop if dtadir has no CSV files
-tbls  <- files %>% str_sub(5,-5)
-dta  <- suppressMessages( map(files, function (x) tibble(read_csv(file.path(dtadir,x)))) )
+if (length(files)>0) {
+    tbls  <- files %>% str_sub(5,-5)
+    dta  <- suppressMessages( map(files, function (x) tibble(read_csv(file.path(dtadir,x)))) )
+    names(dta)  <- tbls
+    ## now dta is a list of all tables, named appropriately (e.g., dta$specimen_tracking_enrollment, etc.)
 
-names(dta)  <- tbls
-## now dta is a list of all tables, named appropriately (e.g., dta$specimen_tracking_enrollment, etc.)
-
-## output which tables have no data (but are requested in config.yml) - to stderr
-dum <- flatten(map( names(dta), function (x) if (!nrow(dta[[x]])) {dum <- if (x %in% names(config$xtbls)) cat(str_interp("Table ${x} has no data\n"),file=stderr())}))
+    ## output which tables have no data (but are requested in config.yml) - to stderr
+    dum <- flatten(map( names(dta), function (x) if (!nrow(dta[[x]])) {dum <- if (x %in% names(config$xtbls)) cat(str_interp("Table ${x} has no data\n"),file=stderr())}))
+}
 
 if( !is.null(config$output) ) {
     for( nm in names(config$output) ) {
