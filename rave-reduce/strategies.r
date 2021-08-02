@@ -27,7 +27,7 @@ strategies <- list(
         need_files()
         ## argument 'pulldate' is ignored in this function
         ## pull_date from the entity_ids file is used
-        cras  <- read_excel(config$cra_excel,1)
+                                        # cras  <- read_excel(config$cra_excel,1)
         pub_ids  <- entity_ids %>%
             filter(!is.na(ctep_id)) %>%
             group_by(ctep_id) %>%
