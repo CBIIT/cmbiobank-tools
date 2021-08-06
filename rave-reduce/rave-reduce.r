@@ -40,6 +40,8 @@ oparser <- OptionParser(
                      help="ids file (rds format) (default: %default)"),
         make_option(c("--bcr-file"),action="store",default="NONE",
                     help="bcr report file (excel format) (default: NONE)"),
+        make_option(c("--bcr-slide-file-dir"),action="store",default="NONE",
+                    help="bcr slide report dir (excel format) (default: NONE)"),
         make_option(c("--bcr-date"),action="store",default=NULL,
                     help="date of bcr report file: 'dd MMM yyyy'"),
         make_option(c("-d","--pulldate"),action="store", default=tday,
@@ -83,6 +85,22 @@ if (is.null(opts$options$bcr_file) | (opts$options$bcr_file == "NONE")) {
     }
 }
 
+if (is.null(opts$options$bcr_slide_file_dir) | (opts$options$bcr_slide_file_dir == "NONE")) {
+    bcr_slides  <- NULL
+} else {
+    if (!file.exists(opts$options$bcr_slide_file_dir)) {
+        warning(str_interp("BCR file '${opts$options$bcr_slide_file_dir}' is not found\n"),
+            immediate.=TRUE)
+        bcr_slides  <- NULL
+    } else {
+        ff  <- grep("xlsx",dir(opts$options$bcr_slide_file_dir),value=T)
+        bcr_slides  <- NULL
+        for (f in ff) bcr_slides  <- bcr_slides %>%
+                          bind_rows(
+                              read_excel(file.path(opts$options$bcr_slide_file_dir,f)))
+    }
+}
+
 outfile  <-  opts$options$outfile
 
 ## list strategies - a help function
@@ -98,6 +116,7 @@ if (opts$options$list) {
 dtadir  <- opts$args[1]
 config  <- config::get(config=opts$options$strategy,file=file.path(opts$options$config_dir,opts$options$config))
 terms  <- readRDS(file.path(opts$options$config_dir,config$terms_rds_file))
+med_to_tcia  <- readRDS(file.path(opts$options$config_dir,config$meddra_tcia_file))
 pull_date  <- opts$options$pulldate
 bcr_pull_date  <- if (is.null(opts$options$bcr_date)) { pull_date } else { opts$options$bcr_date }
 

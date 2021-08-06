@@ -217,7 +217,11 @@ strategies <- list(
             mutate(pull_date = pulldate)
         entity_ids_upd  <<- bind_rows(entity_ids,orphans_bcr) %>% arrange(pub_subspec_id)
     },
-   slide_table = function (pull_date) {
+    slide_table = function (pull_date) {
+        if (is.null(bcr_report)) {
+            cat("strategy requires bcr_report\n")
+            quit(save="no")
+        }
        slide_mapping  <- entity_ids %>%
            inner_join(bcr_report, by = c("bcr_subspec_id" = "BSI ID")) %>%
            inner_join(
@@ -228,11 +232,22 @@ strategies <- list(
            rename(c( "anatomic_site" = "Anatomic Site",
                     "material_type" = "Material Type",
                     "clinical_diagnosis" = "CTEP_SDC_MED_V10_CD")) %>%
-           select(ctep_id, pub_id, pub_spec_id, pub_subspec_id, bcr_subspec_id,
+           select(ctep_id, pub_id, pub_spec_id, rave_spec_id, pub_subspec_id, bcr_subspec_id,
                   material_type, anatomic_site, clinical_diagnosis, pull_date) %>%
            filter( grepl("Slide",material_type) ) %>%
            select(-material_type)
-       ## final table should meet reqs as of tori email 7/2/21
+        slide_mapping  <- slide_mapping %>%
+           left_join(dta$specimen_transmittal %>% select(SPECID,TISTYP),
+                      by = c( "rave_spec_id" = "SPECID" )) %>%
+           left_join(bcr_slides %>% select("Barcode ID","Image File Name"),
+                      by = c( "bcr_subspec_id" = "Barcode ID")) %>%
+           left_join(med_to_tcia,
+                     by = c("clinical_diagnosis" = "MedDRA Term"))  %>%
+           rename( c( "Tissue Type" = "TISTYP",
+                     "Filename" = "Image File Name" ) ) %>%
+            unique()
+       
+       ## final table should meet reqs as of BF-S mtg 8/3/21 and excel "...with column headers needed"
        slide_mapping
     }
 )

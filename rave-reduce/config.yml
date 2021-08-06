@@ -16,6 +16,7 @@ default:
   # (default is /usr/local/rave-reduce)
   terms_rds_file: form-terms.rds
   strategies_file: strategies.r
+  meddra_tcia_file: meddra-to-tcia.rds
   
   # Excel on Teams (NCI-DCTD Moonshot Biobank IT)
   # "Files/ID Management/Random IDs.xlsx"
