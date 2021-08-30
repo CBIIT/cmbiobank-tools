@@ -194,6 +194,15 @@ slide_table:
     slide_data_for_uams.txt:
       strategy: slide_table
       delim: "\t"
+tcia_metadata:
+  description: |
+    Create a table of metadata about slides for use in TCIA's Datascope filter
+  xtbls: null
+  xcols: null
+  output:
+    slide_metadata_for_tcia.txt:
+      strategy: tcia_metadata
+      delim: "\t"
 entity_ids_from_xls:
   description: |
     Read ids Excel file to create the entity_ids table (internal public id mapping)

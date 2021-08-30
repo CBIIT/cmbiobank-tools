@@ -4,7 +4,23 @@ need_files  <- function(){
         q(save="no")
     }
 }
-            
+
+need_bcr_report <- function(){
+    if (is.null(bcr_report)) {
+        cat(str_interp("this strategy requires a valid --bcr-file option\n"))
+        q(save="no")
+    }
+}
+
+need_bcr_slides <- function(){
+    if (is.null(bcr_slides)) {
+        cat(str_interp("this strategy requires a valid --bcr-slide-file-dir option\n"))
+        q(save="no")
+    }
+}
+
+
+
 strategies <- list(
     check_ids = function (pull_date) {
         need_files()
@@ -218,10 +234,9 @@ strategies <- list(
         entity_ids_upd  <<- bind_rows(entity_ids,orphans_bcr) %>% arrange(pub_subspec_id)
     },
     slide_table = function (pull_date) {
-        if (is.null(bcr_report)) {
-            cat("strategy requires bcr_report\n")
-            quit(save="no")
-        }
+        need_files()
+        need_bcr_report()
+        need_bcr_slides()
        slide_mapping  <- entity_ids %>%
            inner_join(bcr_report, by = c("bcr_subspec_id" = "BSI ID")) %>%
            inner_join(
@@ -232,8 +247,10 @@ strategies <- list(
            rename(c( "anatomic_site" = "Anatomic Site",
                     "material_type" = "Material Type",
                     "clinical_diagnosis" = "CTEP_SDC_MED_V10_CD")) %>%
-           select(ctep_id, pub_id, pub_spec_id, rave_spec_id, pub_subspec_id, bcr_subspec_id,
-                  material_type, anatomic_site, clinical_diagnosis, pull_date) %>%
+           select(ctep_id, pub_id, pub_spec_id,
+                  rave_spec_id, pub_subspec_id, bcr_subspec_id,
+                  material_type, anatomic_site, clinical_diagnosis,
+                  pull_date) %>%
            filter( grepl("Slide",material_type) ) %>%
            select(-material_type)
         slide_mapping  <- slide_mapping %>%
@@ -243,15 +260,50 @@ strategies <- list(
                       by = c( "bcr_subspec_id" = "Barcode ID")) %>%
            left_join(med_to_tcia,
                      by = c("clinical_diagnosis" = "MedDRA Term"))  %>%
-           rename( c( "Tissue Type" = "TISTYP",
-                     "Filename" = "Image File Name" ) ) %>%
+           rename( c( "tissue_type" = "TISTYP",
+                     "filename" = "Image File Name",
+                     "tcia_collection" = "TCIA Collection") ) %>%
             unique()
        
-       ## final table should meet reqs as of BF-S mtg 8/3/21 and excel "...with column headers needed"
-       slide_mapping
+        ## final table should meet reqs as of BF-S mtg 8/3/21 and excel "...with column headers needed"
+        slide_mapping
+    },
+    tcia_metadata = function(pull_date) {
+        need_files()
+        need_bcr_report()
+        pt_info <- dta$enrollment %>%
+            select( Subject, matches("RACE_.*_STD"),ETHNIC_STD,
+                   CTEP_SDC_MED_V10_CD, MHLOC_STD, AGE,
+                   SEX_STD, GENDER_STD ) %>%
+            mutate( RACE = str_c(str_replace_na(RACE_01_STD,""),str_replace_na(RACE_02_STD,""),str_replace_na(RACE_03_STD,""),str_replace_na(RACE_04_STD,""),str_replace_na(RACE_05_STD,""),str_replace_na(RACE_06_STD,""),str_replace_na(RACE_07_STD,"")) ) %>%
+            select( -matches("RACE_.*") )
+
+        spec_info <- dta$biopsy_pathology_verification_and_assessment %>%
+            select(MIREFID,BSREFID_DRV,SPLADQFL_X1_STD,
+                   MIORRES_TUCONT_X1_STD,MHTERM_DIAGNOSIS)
+
+        slides <-  bcr_report %>%
+            rename( "material_type" = "Material Type") %>%
+            filter(grepl("Slide",material_type)) %>%
+            select("Subject ID","BSI ID",
+                   vari_necrosis = "QC % Necrosis (Moonshot)",
+                   vari_cellularity = "QC Tumor Cellularity (Moonshot)") %>%
+            inner_join(ent,
+                       by = c("BSI ID"="bcr_subspec_id","Subject ID"="ctep_id"))
+
+        datascape <- slides %>%
+            inner_join(pt_info, by=c("Subject ID"="Subject")) %>%
+            inner_join(spec_info, by = c("rave_spec_id" = "MIREFID")) %>%
+            unique %>%
+            select( pub_id, pub_subspec_id,
+                   Topographic_Site = CTEP_SDC_MED_V10_CD,
+                   Tumor_Histologic_Type = MHTERM_DIAGNOSIS,
+                   Tumor_Segment_Acceptable = SPLADQFL_X1_STD,
+                   Percent_Tumor_Nuclei = MIORRES_TUCONT_X1_STD,
+                   vari_cellularity,
+                   vari_necrosis,
+                   Gender = SEX_STD, Age = AGE, Ethnicity = ETHNIC_STD,
+                   Race = RACE)
+        datascape
     }
 )
-
-
-
-
