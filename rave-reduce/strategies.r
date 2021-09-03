@@ -271,6 +271,12 @@ strategies <- list(
     tcia_metadata = function(pull_date) {
         need_files()
         need_bcr_report()
+        tc_rngs <- c("NO VIABLE TUMOR PRESENT"="0 - 9%",
+                  "10% AND 19%" = "10% - 19%",
+                  "20% AND 49%" = "20% - 49%",
+                  "50% AND 69%" = "50% - 69%",
+                  "70%" = ">=70%" )
+        getrng <- function (z) map_chr(z, function (y) if (!is.na(y)) tc_rngs[map_lgl( names(tc_rngs), function (x) grepl(x,y))] else NA)
         pt_info <- dta$enrollment %>%
             select( Subject, matches("RACE_.*_STD"),ETHNIC_STD,
                    CTEP_SDC_MED_V10_CD, MHLOC_STD, AGE,
@@ -280,7 +286,11 @@ strategies <- list(
 
         spec_info <- dta$biopsy_pathology_verification_and_assessment %>%
             select(MIREFID,BSREFID_DRV,SPLADQFL_X1_STD,
-                   MIORRES_TUCONT_X1_STD,MHTERM_DIAGNOSIS)
+                   MIORRES_TUCONT_X1_STD,MIORRES_TUCONT_X2_STD,
+                   MHTERM_DIAGNOSIS) %>%
+            inner_join(dta$specimen_tracking_enrollment %>%
+                       select(rave_spec_id,ASMTTPT_STD),
+                       by = c("MIREFID" = "rave_spec_id"))
 
         slides <-  bcr_report %>%
             rename( "material_type" = "Material Type") %>%
@@ -288,22 +298,38 @@ strategies <- list(
             select("Subject ID","BSI ID",
                    vari_necrosis = "QC % Necrosis (Moonshot)",
                    vari_cellularity = "QC Tumor Cellularity (Moonshot)") %>%
-            inner_join(ent,
+            inner_join(entity_ids,
                        by = c("BSI ID"="bcr_subspec_id","Subject ID"="ctep_id"))
 
         datascape <- slides %>%
             inner_join(pt_info, by=c("Subject ID"="Subject")) %>%
             inner_join(spec_info, by = c("rave_spec_id" = "MIREFID")) %>%
             unique %>%
+            mutate(
+                Percent_Tumor_Nuc = getrng(MIORRES_TUCONT_X1_STD),
+                Percent_Tumor_Nuc_Enriched = getrng(MIORRES_TUCONT_X2_STD),
+            ) %>%
+            mutate(
+                Percent_Tumor_Nuclei = dplyr::coalesce(Percent_Tumor_Nuc_Enriched, Percent_Tumor_Nuc),
+                Is_Enriched = map2_chr(is.na(Percent_Tumor_Nuc),is.na(Percent_Tumor_Nuc_Enriched),function(x,y) if (x) { NA } else if (y) {"N"} else {"Y"})
+                ) %>%
             select( pub_id, pub_subspec_id,
+                   Timepoint = ASMTTPT_STD,
                    Topographic_Site = CTEP_SDC_MED_V10_CD,
                    Tumor_Histologic_Type = MHTERM_DIAGNOSIS,
                    Tumor_Segment_Acceptable = SPLADQFL_X1_STD,
-                   Percent_Tumor_Nuclei = MIORRES_TUCONT_X1_STD,
-                   vari_cellularity,
-                   vari_necrosis,
+                   Percent_Necrosis = vari_necrosis,
+                   Percent_Tumor_Nuclei,
+                   Is_Enriched,
                    Gender = SEX_STD, Age = AGE, Ethnicity = ETHNIC_STD,
-                   Race = RACE)
+                   Race = RACE) %>%
+            mutate(
+                Tumor_Histologic_Type = str_to_title(Tumor_Histologic_Type)
+                ) %>%
+            left_join(med_to_tcia,
+                      by = c("Topographic_Site" = "MedDRA Term")) %>%
+            rename( "TCIA_Collection" = "TCIA Collection")
         datascape
     }
 )
+

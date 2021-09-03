@@ -1,5 +1,6 @@
 #!/usr/bin/env -S Rscript --slave
 suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(stringr))
 suppressPackageStartupMessages(library(lubridate))
 suppressPackageStartupMessages(library(readxl))
 suppressPackageStartupMessages(library(optparse))
@@ -143,7 +144,7 @@ if (length(files)>0) {
     ## now dta is a list of all tables, named appropriately (e.g., dta$specimen_tracking_enrollment, etc.)
 
     ## this adds rave_spec_id to the subject_tracking_enrollment table:
-    dta$specimen_tracking_enrollment %>%
+    dta$specimen_tracking_enrollment <- dta$specimen_tracking_enrollment %>%
         inner_join( dta$administrative_enrollment %>%
                     select(Subject, USUBJID)) %>%
         mutate(rave_spec_id = str_c(project, USUBJID, RecordPosition, sep="-"))
