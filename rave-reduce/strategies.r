@@ -44,6 +44,10 @@ strategies <- list(
         ## argument 'pulldate' is ignored in this function
         ## pull_date from the entity_ids file is used
                                         # cras  <- read_excel(config$cra_excel,1)
+        withdrawn <- NULL
+        if (file.exists(config$withdrawn)) {
+            withdrawn <- read_tsv(config$withdrawn);
+        }
         pub_ids  <- entity_ids %>%
             filter(!is.na(ctep_id)) %>%
             group_by(ctep_id) %>%
@@ -51,7 +55,7 @@ strategies <- list(
             mutate( date = dmy(pull_date) ) %>%
             arrange(ctep_id, date) %>%
             summarize( pub_id = first(pub_id), up_id = first(up_id), pull_date=first(pull_date), date = first(date) )
-        dta$enrollment %>% left_join(pub_ids, by=c("Subject" = "ctep_id")) %>%
+        tbl <- dta$enrollment %>% left_join(pub_ids, by=c("Subject" = "ctep_id")) %>%
             select(project, Subject, Site,CTEPID, DSSTDAT_ENROLLMENT_RAW,CTEP_SDC_MED_V10_CD, pub_id,up_id,pull_date) %>%
             left_join( dta$shipping_status %>%
               select(Subject, EMAIL_SHP) %>%
@@ -59,7 +63,11 @@ strategies <- list(
               group_by(Subject) %>%
               filter( !grepl("@vai",EMAIL_SHP) ) %>%
               summarize( CRA = first(EMAIL_SHP)),
-              by = c("Subject")) %>%
+              by = c("Subject"))
+        if (!is.null(withdrawn)) {
+            tbl <- tbl %>% mutate( CRA = if_else( pub_id %in% withdrawn$pub_id, "WITHDRAWN", CRA ) )
+        }
+        tbl %>%
             transmute("Date Created" = pull_date, #str_interp("${pull_date}"),
                   "Study" = project,
                   "Registration Step" = 1,
@@ -196,8 +204,11 @@ strategies <- list(
             cat("bcr report not provided\n")
         }
         # throw if there are duplicate subspec ids
-        stopifnot( length((entity_ids_upd %>% filter(!is.na(pub_subspec_id)))$pub_subspec_id) ==
-                   length((entity_ids_upd %>% filter(!is.na(pub_subspec_id)))$pub_subspec_id %>% unique) )
+        if ( length((entity_ids_upd %>% filter(!is.na(pub_subspec_id)))$pub_subspec_id) !=
+             length((entity_ids_upd %>% filter(!is.na(pub_subspec_id)))$pub_subspec_id %>% unique) ) {
+            cat("error: public subspecimen ids are not unique\n")
+            quit(save="no")
+        }
         entity_ids_upd
     },
     entity_ids_upd = function (pull_date) entity_ids_upd,
@@ -301,7 +312,7 @@ strategies <- list(
             inner_join(entity_ids,
                        by = c("BSI ID"="bcr_subspec_id","Subject ID"="ctep_id"))
 
-        datascape <- slides %>%
+        datascope <- slides %>%
             inner_join(pt_info, by=c("Subject ID"="Subject")) %>%
             inner_join(spec_info, by = c("rave_spec_id" = "MIREFID")) %>%
             unique %>%
@@ -329,7 +340,7 @@ strategies <- list(
             left_join(med_to_tcia,
                       by = c("Topographic_Site" = "MedDRA Term")) %>%
             rename( "TCIA_Collection" = "TCIA Collection")
-        datascape
+        datascope
     }
 )
 

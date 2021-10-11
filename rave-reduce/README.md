@@ -9,6 +9,9 @@ data reduction tasks on CMB Rave data dumps.
     Usage: ./rave-reduce.r [OPTIONS] dumpdir
 
     Options:
+        --config-dir=CONFIG-DIR
+		    configuration directory (location of config.yml, strategies.r; default: /usr/local/rave-reduce
+
     	-c CONFIG, --config=CONFIG
     		config file (default: config.yml)
 
@@ -18,8 +21,20 @@ data reduction tasks on CMB Rave data dumps.
     	--ids-file=IDS-FILE
     		ids file (rds format) (default: entity_ids.rds)
 
+      	--bcr-file=BCR-FILE
+		    bcr report file (excel format) (default: NONE)
+
+        --bcr-slide-file-dir=BCR-SLIDE-FILE-DIR
+            bcr slide report dir (excel format) (default: NONE)
+
+        --bcr-date=BCR-DATE
+            date of bcr report file: 'dd MMM yyyy'
+
     	-d PULLDATE, --pulldate=PULLDATE
     		pull date to apply to output
+
+        -o OUTFILE, --outfile=OUTFILE
+            specify output filename for certain strategies
 
     	-l, --list
     		list strategies with descriptions
@@ -55,7 +70,7 @@ data structure. For example, the "iroc" strategy, which creates an updated metad
           - CTEP_SDC_MED_V10_CD
           - pub_id
           - up_id
-      cra_excel: "cra-users.xlsx"
+      withdrawn: "cmb-withdrawn-participants.tsv"
       output:
         cmb_registration_data_for_iroc.txt:
           strategy: iroc

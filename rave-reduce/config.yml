@@ -181,6 +181,7 @@ iroc:
       - up_id
   xcols: null
   cra_excel: "cra-users.xlsx"
+  withdrawn: "cmb-withdrawn-participants.tsv"
   output:
     cmb_registration_data_for_iroc.txt:
       strategy: iroc
