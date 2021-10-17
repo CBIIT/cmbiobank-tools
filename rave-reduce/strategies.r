@@ -106,10 +106,26 @@ strategies <- list(
         orphans <- dta$specimen_transmittal %>%
             select(Subject,SPECID,BSREFID,USUBJID_DRV) %>% unique %>%
             anti_join(entity_ids, by = c("Subject"="ctep_id",
-                                         "SPECID"="rave_spec_id",
-                                         "BSREFID"="bcr_subspec_id",
-                                         "USUBJID_DRV"="up_id")) %>%
-            full_join(no_specimens)
+                                  "SPECID"="rave_spec_id",
+                                  "BSREFID"="bcr_subspec_id",
+                                  "USUBJID_DRV"="up_id"))
+        orphans <- orphans %>%
+            full_join(
+                dta$receiving_status %>%
+                select(Subject,SPECID2_DRV,SUBSPCM) %>%
+                filter( !is.na(SUBSPCM) ) %>%
+                inner_join(dta$administrative_enrollment, by=c("Subject")) %>%
+                select(Subject,SPECID2_DRV,SUBSPCM,USUBJID) %>% unique %>%
+                anti_join(entity_ids, by = c("Subject" = "ctep_id",
+                                      "SPECID2_DRV"="rave_spec_id",
+                                      "SUBSPCM"="bcr_subspec_id",
+                                      "USUBJID"="up_id")),
+                by = c("Subject" = "Subject",
+                       "SPECID" = "SPECID2_DRV",
+                       "BSREFID" = "SUBSPCM",
+                       "USUBJID_DRV" = "USUBJID"))
+        
+        orphans <- orphans %>% full_join(no_specimens)
         ## newbies - new patients without pub_id
         newbies  <- orphans %>% anti_join(entity_ids,
                                           by=c("Subject"="ctep_id",
