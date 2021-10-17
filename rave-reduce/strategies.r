@@ -103,12 +103,15 @@ strategies <- list(
         ## need to look at enrollment table too
         ## orphans - no pub_id or pub_spec_id yet
         no_specimens  <- dta$enrollment %>% inner_join(dta$administrative_enrollment,by=c("Subject")) %>% select(Subject,USUBJID) %>% anti_join(dta$specimen_transmittal) %>% rename(USUBJID_DRV = USUBJID)
+        ## pull orphans from specimen_transmittal form
         orphans <- dta$specimen_transmittal %>%
             select(Subject,SPECID,BSREFID,USUBJID_DRV) %>% unique %>%
             anti_join(entity_ids, by = c("Subject"="ctep_id",
                                   "SPECID"="rave_spec_id",
                                   "BSREFID"="bcr_subspec_id",
                                   "USUBJID_DRV"="up_id"))
+
+        ## pull more orphans from receiving_status form
         orphans <- orphans %>%
             full_join(
                 dta$receiving_status %>%
@@ -124,7 +127,8 @@ strategies <- list(
                        "SPECID" = "SPECID2_DRV",
                        "BSREFID" = "SUBSPCM",
                        "USUBJID_DRV" = "USUBJID"))
-        
+
+        ## add those new participants without specimens yet
         orphans <- orphans %>% full_join(no_specimens)
         ## newbies - new patients without pub_id
         newbies  <- orphans %>% anti_join(entity_ids,
@@ -231,7 +235,7 @@ strategies <- list(
     update_bcr_ids = function (pulldate) {
         orphans_bcr  <- bcr_report %>% anti_join(entity_ids, by = c("BSI ID" = "bcr_subspec_id")) %>%
             rename( c("rave_spec_id"="Original Id","bcr_subspec_id" = "BSI ID") ) %>%
-            transmute( rave_spec_id, bcr_subspec_id) %>% 
+            transmute( rave_spec_id = str_to_upper(rave_spec_id), bcr_subspec_id) %>% 
             inner_join( entity_ids %>% select(ctep_id, up_id, rave_spec_id,pub_id, pub_spec_id) %>% unique ) %>%
             arrange(pub_spec_id, bcr_subspec_id) 
 
