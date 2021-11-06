@@ -1,0 +1,31 @@
+paths:
+  base_path: /Users/jensenma/Documents/BioBank/bb-data/cmbiobank-tools/rave-reduce/
+  entity_id_source: >-
+    ids
+  rave_dump_source: >-
+    onedrive/Rave Data Dumps
+  rave_dump_dest: data-dumps
+  vari_inventory_source: >-
+    onedrive/BSI Data/inventory
+  vari_slide_data_source: >-
+    onedrive/BSI Data/slide data
+  ids_dest: >-
+    onedrive/Id Management
+  theradex_dest: >-
+    box/CMB IT + Theradex
+  tcia_dest: >-
+    box/Biobank Slide ID Tables
+  tcia_local: >-
+    tcia
+  uams_dest: >-
+    box/Biobank Slide ID Tables
+  uams_local: >-
+    uams
+  mocha_dest: >-
+    box/MoCha Lab - BioBank IT
+  iroc_local: >-
+    iroc
+  
+  
+
+  
