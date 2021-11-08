@@ -54,6 +54,9 @@ locs = conf['paths']
 base = (Path(locs["base_path"]) if locs.get("base_path") else Path("."))
 logger.info("Base path is {}".format(base))
 
+logger.info("Loading rave-reduce config.yml")
+rr_conf = yaml.load(open("config.yml","r"),Loader=loader)
+
 # process locations (dirs) from yaml
 for loc in locs:
     if loc == 'base_path':
@@ -91,8 +94,8 @@ cmd = []
 
 id_rds = entity_ids_rds.latest_path
 id_rds_date = entity_ids_rds.latest_date
-
 id_rds_tag = re.match("entity_ids[.](.*)[.]rds",id_rds.name).group(1)
+
 
 if (not id_rds_tag) or ( entity_ids_rds.latest_date.strftime("%Y%m%d") not in id_rds_tag):
     logger.error("Entity id filename {} is non-standard; can't detect datestamp".format(id_rds.name))
@@ -154,7 +157,8 @@ if rave_dumps_to_do:
         id_rds = next_id_rds
         id_rds_date = datetime.date(int(next_id_rds_tag[0:4]),
                                     int(next_id_rds_tag[4:6]),
-                                    int(next_id_rds_tag[6:8]))                                    
+                                    int(next_id_rds_tag[6:8]))
+        id_rds_tag = next_id_rds_tag
 
 # then merge new var inventories, earliest to latest
 if vari_inv_to_do:
@@ -199,13 +203,42 @@ if vari_inv_to_do:
         id_rds = next_id_rds
         id_rds_date = datetime.date(int(next_id_rds_tag[0:4]),
                                     int(next_id_rds_tag[4:6]),
-                                    int(next_id_rds_tag[6:8]))                                    
+                                    int(next_id_rds_tag[6:8]))
+        id_rds_tag = next_id_rds_tag
+        
 # Now id_rds is the latest entity ids file - if any updates were performed
 # this is in the stage directory (otherwise, is the original in the source
 # directory
 # Create any required outgoing products in the stage directory:
 
+# new audit file if nec
+if id_rds != entity_ids_rds.latest_path:
+    new_id_rds_audit = id_rds.with_suffix(".audit")
+    logger.info("Create new audit file {}".format(new_id_rds_audit))
+    if not args.dry_run:
+        new_id_rds_audit.write_text( "\n".join(aud)+"\n" )
 
+# create iroc registration
+
+logger.info("Create iroc registration with date {}".format(id_rds_date))
+cmd = [ '../rave-reduce.r',
+        '-s', 'iroc',
+        '--ids-file',str(id_rds.resolve()),
+        str(rave_dumps.latest_file)]
+logger.debug("cmd: {}".format(" ".join(cmd)))
+if not args.dry_run:
+    rc = run(cmd, capture_output=True, cwd=stage_dir)
+    try:
+        rc.check_returncode()
+    except subprocess.CalledProcessError as e:
+        logger.error("On run: {}\nstderr: {}\nstdout {}".format(
+            " ".join(cmd), e.stderr, e.stdout))
+        raise e
+    outnm = [x for x in rr_conf["iroc"]["output"]][0]
+    newnm = outnm
+    newnm.replace('_','-').replace('txt',"{}.txt".format(id_rds_date.strftime("%Y-%m-%d")))
+    logger.debug("Rename rave-reduce output from {} to {}".format(outnm, newnm))
+    (stage_dir / Path(outnm)).rename( stage_dir / Path(newnm) )
 
 
 
