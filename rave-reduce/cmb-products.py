@@ -4,7 +4,7 @@ import sys
 import shlex
 import logging
 import argparse
-import  datetime
+import datetime
 import yaml
 from pathlib import Path
 import subprocess
@@ -226,6 +226,9 @@ cmd = [ '../rave-reduce.r',
         '--ids-file',str(id_rds.resolve()),
         str(rave_dumps.latest_file)]
 logger.debug("cmd: {}".format(" ".join(cmd)))
+outnm = [x for x in rr_conf["iroc"]["output"]][0]
+newnm = outnm
+newnm.replace('_','-').replace('txt',".".join(id_rds_date.strftime("%Y-%m-%d"),"txt"))
 if not args.dry_run:
     rc = run(cmd, capture_output=True, cwd=stage_dir)
     try:
@@ -234,13 +237,77 @@ if not args.dry_run:
         logger.error("On run: {}\nstderr: {}\nstdout {}".format(
             " ".join(cmd), e.stderr, e.stdout))
         raise e
-    outnm = [x for x in rr_conf["iroc"]["output"]][0]
-    newnm = outnm
-    newnm.replace('_','-').replace('txt',"{}.txt".format(id_rds_date.strftime("%Y-%m-%d")))
     logger.debug("Rename rave-reduce output from {} to {}".format(outnm, newnm))
     (stage_dir / Path(outnm)).rename( stage_dir / Path(newnm) )
+    logger.info("Create new audit file {}".format((stage_dir / Path(newnm)).with_suffix(".audit")))
+    (stage_dir / Path(newnm)).with_suffix(".audit").write_text(
+        "\n".join([id_rds.name,rave_dumps.latest_file.name])+"\n")
+if args.fake_file:
+    (stage_dir / Path(newnm)).touch(exist_ok=True)
+    (stage_dir / Path(newnm)).with_suffix(".audit").touch(exist_ok=True)
 
+# slide table
 
+logger.info("Create uams slide table with date {}".format(id_rds_date))
+cmd = [ '../rave-reduce.r',
+        '-s', 'slide_table',
+        '--ids-file',str(id_rds.resolve()),
+        '--bcr-file',str(vari_inventory.latest_file.resolve()),
+        '--bcr-slide-file-dir',str(locs['vari_slide_data_source']),
+        '-d', id_rds_date.strftime("%d %b %Y"),
+        str(rave_dumps.latest_file)]
+outnm = [x for x in rr_conf["slide_table"]["output"]][0]
+newnm = outnm
+newnm.replace("txt",".".join(id_rds_date.strftime("%Y%m%d"),"txt"))
+if not args.dry_run:
+    rc = run(cmd, capture_output=True, cwd=stage_dir)
+    try:
+        rc.check_returncode()
+    except subprocess.CalledProcessError as e:
+        logger.error("On run: {}\nstderr: {}\nstdout {}".format(
+            " ".join(cmd), e.stderr, e.stdout))
+        raise e
+    logger.debug("Rename rave-reduce output from {} to {}".format(outnm, newnm))
+    (stage_dir / Path(outnm)).rename( stage_dir / Path(newnm) )
+    logger.info("Create new audit file {}".format((stage_dir / Path(newnm)).with_suffix(".audit")))
+    (stage_dir / Path(newnm)).with_suffix(".audit").write_text(
+        "\n".join([id_rds.name,
+                   vari_inventory.latest_file.name,
+                   locs['vari_slide_data_source'].name,
+                   rave_dumps.latest_file.name])+"\n")
+if args.fake_file:
+    (stage_dir / Path(newnm)).touch(exist_ok=True)
+    (stage_dir / Path(newnm)).with_suffix(".audit").touch(exist_ok=True)
 
+# tcia metadata
 
+logger.info("Create tcia metadate table with date {}".format(id_rds_date))
+cmd = [ '../rave-reduce.r',
+        '-s', 'tcia_metadata',
+        '--ids-file',str(id_rds.resolve()),
+        '--bcr-file',str(vari_inventory.latest_file.resolve()),
+        '-d', id_rds_date.strftime("%d %b %Y"),
+        str(rave_dumps.latest_file)]
+outnm = [x for x in rr_conf["tcia_metadata"]["output"]][0]
+newnm = outnm
+newnm.replace("txt",".".join(id_rds_date.strftime("%Y%m%d"),"txt"))
+if not args.dry_run:
+    rc = run(cmd, capture_output=True, cwd=stage_dir)
+    try:
+        rc.check_returncode()
+    except subprocess.CalledProcessError as e:
+        logger.error("On run: {}\nstderr: {}\nstdout {}".format(
+            " ".join(cmd), e.stderr, e.stdout))
+        raise e
+    logger.debug("Rename rave-reduce output from {} to {}".format(outnm, newnm))
+    (stage_dir / Path(outnm)).rename( stage_dir / Path(newnm) )
+    logger.info("Create new audit file {}".format((stage_dir / Path(newnm)).with_suffix(".audit")))
+    (stage_dir / Path(newnm)).with_suffix(".audit").write_text(
+        "\n".join([id_rds.name,
+                   vari_inventory.latest_file.name,
+                   rave_dumps.latest_file.name])+"\n")
+if args.fake_file:
+    (stage_dir / Path(newnm)).touch(exist_ok=True)
+    (stage_dir / Path(newnm)).with_suffix(".audit").touch(exist_ok=True)
+    
 

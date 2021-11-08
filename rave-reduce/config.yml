@@ -197,7 +197,7 @@ slide_table:
       delim: "\t"
 tcia_metadata:
   description: |
-    Create a table of metadata about slides for use in TCIA's Datascope filter
+    Create a table of metadata about slides for use in TCIA\'s Datascope filter
   xtbls: null
   xcols: null
   output:
