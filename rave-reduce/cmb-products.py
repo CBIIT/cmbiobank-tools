@@ -4,9 +4,11 @@ import sys
 import shlex
 import logging
 import argparse
-from pathlib import Path
-from subprocess import run
+import  datetime
 import yaml
+from pathlib import Path
+import subprocess
+from subprocess import run
 from file_series import file_series as fs
 from yaml import CLoader as loader
 from pdb import set_trace
@@ -18,8 +20,10 @@ parser.add_argument('--conf-file', default="cmb-products.yaml")
 parser.add_argument('--verbose','-v',action="count")
 parser.add_argument('--quiet','-q',action="count")
 parser.add_argument('--stage-dir', default=".cmb-build",help="directory for staging built products")
+parser.add_argument('--fake-file', action="store_true",help="touch files in stage directory")
 
-sys.argv.extend(['--dry-run'])
+# safety for testing
+#sys.argv.extend(['--dry-run','--fake-file'])
 args = parser.parse_args()
 
 
@@ -86,7 +90,8 @@ cmd = []
 # update ids
 
 id_rds = entity_ids_rds.latest_path
-id_rds_date = entity_ids_rds.latest.date
+id_rds_date = entity_ids_rds.latest_date
+
 id_rds_tag = re.match("entity_ids[.](.*)[.]rds",id_rds.name).group(1)
 
 if (not id_rds_tag) or ( entity_ids_rds.latest_date.strftime("%Y%m%d") not in id_rds_tag):
@@ -117,16 +122,16 @@ if rave_dumps_to_do:
         logger.info("Merge rave dump {}".format(rdump[1].name))
         cmd = [ '../rave-reduce.r',
                 '-s','update_ids',
-                '--ids-file',str(id_rds),
-                '-d', shlex.quote(
-                    rdump[0].strftime("%d %b %Y")),
+                '--ids-file',str(id_rds.resolve()),
+                '-d', 
+                    rdump[0].strftime("%d %b %Y"),
                 str(rdump[1]) ]
         logger.debug("cmd: {}".format(" ".join(cmd)))
         next_id_rds_tag = rdump[0].strftime("%Y%m%d")
         while (stage_dir/Path("entity_ids.{}.rds".format(next_id_rds_tag))).exists():
-            mtch = re.match"^(202[0-9]{5})[.]([0-9]+)$",next_id_rds_tag)
+            mtch = re.match("^(202[0-9]{5})([.]([0-9]+))?$",next_id_rds_tag)
             if mtch.group(2):
-                next_id_rds_tag = "{}.{}".format(mtch.group(1),int(mtch.group(2))+1)
+                next_id_rds_tag = "{}.{}".format(mtch.group(1),int(mtch.group(3))+1)
             else:
                 next_id_rds_tag = "{}.1".format(mtch.group(1))
         next_id_rds = stage_dir / Path("entity_ids.{}.rds".format(next_id_rds_tag))
@@ -137,9 +142,13 @@ if rave_dumps_to_do:
                 rc.check_returncode()
             except subprocess.CalledProcessError as e:
                 logger.error("On run: {}\nstderr: {}\nstdout {}".format(
-                    " ".join(e.args), e.stderr, e.stdout))
+                    " ".join(cmd), e.stderr, e.stdout))
                 raise e
             (stage_dir / Path("entity_ids.update.rds")).rename(next_id_rds)
+            (stage_dir / Path("entity_ids.update.tsv")).rename(next_id_rds.with_suffix('.tsv'))
+        if args.fake_file:
+            next_id_rds.touch(exist_ok=True)
+
         logger.debug("Add {} to audit list".format(rdump[1].name))
         aud.extend( [rdump[1].name] )
         id_rds = next_id_rds
@@ -154,10 +163,10 @@ if vari_inv_to_do:
         logger.info("Merge vari inventory {}".format(vi[1].name))
         cmd = [ '../rave-reduce.r',
                 '-s', 'update_ids',
-                '--ids-file',str(id_rds),
+                '--ids-file',str(id_rds.resolve()),
                 '--bcr-file',str(vi[1]),
-                '-d', shlex.quote(
-                    vi[0].strftime("%d %b %Y")),
+                '-d', 
+                    vi[0].strftime("%d %b %Y"),
                 str(rdump[1])]
         logger.debug("cmd: {}".format(" ".join(cmd)))
         if vi[0] > id_rds_date:
@@ -165,9 +174,9 @@ if vari_inv_to_do:
         else:
             next_id_rds_tag = id_rds_date.strftime("%Y%m%d")
         while (stage_dir/Path("entity_ids.{}.rds".format(next_id_rds_tag))).exists():
-            mtch = re.match"^(202[0-9]{5})[.]([0-9]+)$",next_id_rds_tag)
+            mtch = re.match("^(202[0-9]{5})([.]([0-9]+))?$",next_id_rds_tag)
             if mtch.group(2):
-                next_id_rds_tag = "{}.{}".format(mtch.group(1),int(mtch.group(2))+1)
+                next_id_rds_tag = "{}.{}".format(mtch.group(1),int(mtch.group(3))+1)
             else:
                 next_id_rds_tag = "{}.1".format(mtch.group(1))
         next_id_rds = stage_dir / Path("entity_ids.{}.rds".format(next_id_rds_tag))
@@ -181,6 +190,10 @@ if vari_inv_to_do:
                     " ".join(e.args), e.stderr, e.stdout))
                 raise e
             (stage_dir / Path("entity_ids.update.rds")).rename(next_id_rds)
+            (stage_dir / Path("entity_ids.update.tsv")).rename(next_id_rds.with_suffix('.tsv'))
+        if args.fake_file:
+            next_id_rds.touch(exist_ok=True)
+
         logger.debug("Add {} to audit list".format(vi[1].name))
         aud.extend( [ vi[1].name ] )
         id_rds = next_id_rds
@@ -191,6 +204,7 @@ if vari_inv_to_do:
 # this is in the stage directory (otherwise, is the original in the source
 # directory
 # Create any required outgoing products in the stage directory:
+
 
 
 

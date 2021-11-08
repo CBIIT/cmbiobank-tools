@@ -128,7 +128,7 @@ if (is.null(config$description)) {
     else {
         cat(str_interp("no strategy selected; use -s, or -l to list strategies\n"));
     }
-    q(save="no")
+    q(save="no",status=1)
 }
 
 stopifnot(!is.null(config$description)) # no such strategy

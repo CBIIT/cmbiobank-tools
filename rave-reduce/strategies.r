@@ -1,21 +1,21 @@
 need_files  <- function(){
     if (length(files)==0) {
         cat(str_interp("this strategy requires a path containing CSV files (for arg1)\n"))
-        q(save="no")
+        q(save="no",status=1)
     }
 }
 
 need_bcr_report <- function(){
     if (is.null(bcr_report)) {
         cat(str_interp("this strategy requires a valid --bcr-file option\n"))
-        q(save="no")
+        q(save="no",status=1)
     }
 }
 
 need_bcr_slides <- function(){
     if (is.null(bcr_slides)) {
         cat(str_interp("this strategy requires a valid --bcr-slide-file-dir option\n"))
-        q(save="no")
+        q(save="no",status=1)
     }
 }
 
@@ -227,7 +227,7 @@ strategies <- list(
         if ( length((entity_ids_upd %>% filter(!is.na(pub_subspec_id)))$pub_subspec_id) !=
              length((entity_ids_upd %>% filter(!is.na(pub_subspec_id)))$pub_subspec_id %>% unique) ) {
             cat("error: public subspecimen ids are not unique\n")
-            quit(save="no")
+            q(save="no",status=1)
         }
         entity_ids_upd
     },
