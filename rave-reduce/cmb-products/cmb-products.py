@@ -47,16 +47,14 @@ elif args.quiet > 1:
 
 if args.dry_run:
     logger.setLevel(logging.DEBUG)
-    
+
 logger.info("Loading config yaml")
 conf = yaml.load(open(args.conf_file,"r"),Loader=loader)
 locs = conf['paths']
 base = (Path(locs["base_path"]) if locs.get("base_path") else Path("."))
 logger.info("Base path is {}".format(base))
 
-logger.info("Loading rave-reduce config.yml")
-rr_conf = yaml.load(open("config.yml","r"),Loader=loader)
-
+    
 # process locations (dirs) from yaml
 for loc in locs:
     if loc == 'base_path':
@@ -66,6 +64,13 @@ for loc in locs:
     else:
         locs[loc] = base / Path(locs[loc])
     logger.debug("'{}' is at {}".format(loc, locs[loc]))
+
+logger.info("Loading rave-reduce config.yml")
+rr_conf = yaml.load(locs["rave_reduce_config"].open(),Loader=loader)
+
+
+# rave reduce
+rave_reduce_r = str(locs["rave_reduce_r"])
 
 # sources
 entity_ids = fs.FileSeries(locs["entity_id_source"])
@@ -123,7 +128,7 @@ if rave_dumps_to_do:
 
     for rdump in rave_dumps_to_do.iter_from_earliest():
         logger.info("Merge rave dump {}".format(rdump[1].name))
-        cmd = [ '../rave-reduce.r',
+        cmd = [ rave_reduce_r,
                 '-s','update_ids',
                 '--ids-file',str(id_rds.resolve()),
                 '-d', 
@@ -165,7 +170,7 @@ if vari_inv_to_do:
 
     for vi in vari_inv_to_do.iter_from_earliest():
         logger.info("Merge vari inventory {}".format(vi[1].name))
-        cmd = [ '../rave-reduce.r',
+        cmd = [ rave_reduce_r,
                 '-s', 'update_ids',
                 '--ids-file',str(id_rds.resolve()),
                 '--bcr-file',str(vi[1]),
@@ -221,14 +226,13 @@ if id_rds != entity_ids_rds.latest_path:
 # create iroc registration
 
 logger.info("Create iroc registration with date {}".format(id_rds_date))
-cmd = [ '../rave-reduce.r',
+cmd = [ rave_reduce_r,
         '-s', 'iroc',
         '--ids-file',str(id_rds.resolve()),
-        str(rave_dumps.latest_file)]
+        str(rave_dumps.latest_path)]
 logger.debug("cmd: {}".format(" ".join(cmd)))
 outnm = [x for x in rr_conf["iroc"]["output"]][0]
-newnm = outnm
-newnm.replace('_','-').replace('txt',".".join(id_rds_date.strftime("%Y-%m-%d"),"txt"))
+newnm = outnm.replace('_','-').replace('txt',".".join([id_rds_date.strftime("%Y-%m-%d"),"txt"]))
 if not args.dry_run:
     rc = run(cmd, capture_output=True, cwd=stage_dir)
     try:
@@ -241,7 +245,7 @@ if not args.dry_run:
     (stage_dir / Path(outnm)).rename( stage_dir / Path(newnm) )
     logger.info("Create new audit file {}".format((stage_dir / Path(newnm)).with_suffix(".audit")))
     (stage_dir / Path(newnm)).with_suffix(".audit").write_text(
-        "\n".join([id_rds.name,rave_dumps.latest_file.name])+"\n")
+        "\n".join([id_rds.name,rave_dumps.latest_path.name])+"\n")
 if args.fake_file:
     (stage_dir / Path(newnm)).touch(exist_ok=True)
     (stage_dir / Path(newnm)).with_suffix(".audit").touch(exist_ok=True)
@@ -249,16 +253,15 @@ if args.fake_file:
 # slide table
 
 logger.info("Create uams slide table with date {}".format(id_rds_date))
-cmd = [ '../rave-reduce.r',
+cmd = [ rave_reduce_r,
         '-s', 'slide_table',
         '--ids-file',str(id_rds.resolve()),
-        '--bcr-file',str(vari_inventory.latest_file.resolve()),
+        '--bcr-file',str(vari_inventory.latest_path.resolve()),
         '--bcr-slide-file-dir',str(locs['vari_slide_data_source']),
         '-d', id_rds_date.strftime("%d %b %Y"),
-        str(rave_dumps.latest_file)]
+        str(rave_dumps.latest_path)]
 outnm = [x for x in rr_conf["slide_table"]["output"]][0]
-newnm = outnm
-newnm.replace("txt",".".join(id_rds_date.strftime("%Y%m%d"),"txt"))
+newnm = outnm.replace("txt",".".join([id_rds_date.strftime("%Y%m%d"),"txt"]))
 if not args.dry_run:
     rc = run(cmd, capture_output=True, cwd=stage_dir)
     try:
@@ -272,9 +275,9 @@ if not args.dry_run:
     logger.info("Create new audit file {}".format((stage_dir / Path(newnm)).with_suffix(".audit")))
     (stage_dir / Path(newnm)).with_suffix(".audit").write_text(
         "\n".join([id_rds.name,
-                   vari_inventory.latest_file.name,
+                   vari_inventory.latest_path.name,
                    locs['vari_slide_data_source'].name,
-                   rave_dumps.latest_file.name])+"\n")
+                   rave_dumps.latest_path.name])+"\n")
 if args.fake_file:
     (stage_dir / Path(newnm)).touch(exist_ok=True)
     (stage_dir / Path(newnm)).with_suffix(".audit").touch(exist_ok=True)
@@ -282,15 +285,14 @@ if args.fake_file:
 # tcia metadata
 
 logger.info("Create tcia metadate table with date {}".format(id_rds_date))
-cmd = [ '../rave-reduce.r',
+cmd = [ rave_reduce_r,
         '-s', 'tcia_metadata',
         '--ids-file',str(id_rds.resolve()),
-        '--bcr-file',str(vari_inventory.latest_file.resolve()),
+        '--bcr-file',str(vari_inventory.latest_path.resolve()),
         '-d', id_rds_date.strftime("%d %b %Y"),
-        str(rave_dumps.latest_file)]
+        str(rave_dumps.latest_path)]
 outnm = [x for x in rr_conf["tcia_metadata"]["output"]][0]
-newnm = outnm
-newnm.replace("txt",".".join(id_rds_date.strftime("%Y%m%d"),"txt"))
+newnm = outnm.replace("txt",".".join([id_rds_date.strftime("%Y%m%d"),"txt"]))
 if not args.dry_run:
     rc = run(cmd, capture_output=True, cwd=stage_dir)
     try:
@@ -304,8 +306,8 @@ if not args.dry_run:
     logger.info("Create new audit file {}".format((stage_dir / Path(newnm)).with_suffix(".audit")))
     (stage_dir / Path(newnm)).with_suffix(".audit").write_text(
         "\n".join([id_rds.name,
-                   vari_inventory.latest_file.name,
-                   rave_dumps.latest_file.name])+"\n")
+                   vari_inventory.latest_path.name,
+                   rave_dumps.latest_path.name])+"\n")
 if args.fake_file:
     (stage_dir / Path(newnm)).touch(exist_ok=True)
     (stage_dir / Path(newnm)).with_suffix(".audit").touch(exist_ok=True)
