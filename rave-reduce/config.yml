@@ -192,7 +192,7 @@ slide_table:
   xtbls: null
   xcols: null
   output:
-    slide_data_for_uams.txt:
+    slide_data_for_uams.tsv:
       strategy: slide_table
       delim: "\t"
 tcia_metadata:
@@ -201,7 +201,7 @@ tcia_metadata:
   xtbls: null
   xcols: null
   output:
-    slide_metadata_for_tcia.txt:
+    slide_metadata_for_tcia.tsv:
       strategy: tcia_metadata
       delim: "\t"
 entity_ids_from_xls:
