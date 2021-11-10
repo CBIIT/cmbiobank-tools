@@ -181,7 +181,7 @@ iroc:
       - up_id
   xcols: null
   cra_excel: "cra-users.xlsx"
-  withdrawn: "cmb-withdrawn-participants.tsv"
+  withdrawn: "/Users/jensenma/Documents/BioBank/bb-data/cmbiobank-tools/rave-reduce/cmb-withdrawn-participants.tsv"
   output:
     cmb_registration_data_for_iroc.txt:
       strategy: iroc
