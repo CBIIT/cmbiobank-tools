@@ -16,6 +16,7 @@ parser.add_argument('--dry-run', action="store_true",
 parser.add_argument('--conf-file', default="cmb-products.yaml")
 parser.add_argument('--verbose','-v',action="count")
 parser.add_argument('--quiet','-q',action="count")
+parser.add_argument('--distribute',action="store_true",help="push products to delivery locations")
 parser.add_argument('--stage-dir', default=".cmb-build",help="directory for staging built products")
 parser.add_argument('--fake-file', action="store_true",help="touch files in stage directory")
 args = parser.parse_args()
@@ -115,6 +116,7 @@ rave_dumps_to_do = fs.FileSeries(seq=[ x for x in rave_dumps if x[1].name in cur
 # inventories not present in audit file
 cur = { x[1].name for x in vari_inventory }
 vari_inv_to_do = fs.FileSeries(seq=[ x for x in vari_inventory if x[1].name in cur-set(aud)])
+id_rds_intermediates = []
 
 # merge new rave dumps, earliest to latest
 if len(rave_dumps_to_do):
@@ -150,6 +152,7 @@ if len(rave_dumps_to_do):
                                     int(next_id_rds_tag[4:6]),
                                     int(next_id_rds_tag[6:8]))
         id_rds_tag = next_id_rds_tag
+        id_rds_intermediates.append(id_rds)
 
 # then merge new var inventories, earliest to latest
 if len(vari_inv_to_do):
@@ -189,6 +192,7 @@ if len(vari_inv_to_do):
                                     int(next_id_rds_tag[4:6]),
                                     int(next_id_rds_tag[6:8]))
         id_rds_tag = next_id_rds_tag
+        id_rds_intermediates.append(id_rds)        
         
 # Now id_rds is the latest entity ids file - if any updates were performed
 # this is in the stage directory (otherwise, is the original in the source
@@ -196,8 +200,13 @@ if len(vari_inv_to_do):
 # Create any required outgoing products in the stage directory:
 
 # new audit file if nec
+new_id_rds = None
+new_id_xlsx = None
+new_id_rds_audit = None
 if id_rds != entity_ids_rds.latest_path:
+    new_id_rds = id_rds
     new_id_rds_audit = id_rds.with_suffix(".audit")
+    new_id_xlsx = new_id_rds.with_suffix(".xlsx")
     logger.info("Create new audit file {}".format(new_id_rds_audit))
     if not args.dry_run:
         new_id_rds_audit.write_text( "\n".join(aud)+"\n" )
@@ -207,8 +216,13 @@ if id_rds != entity_ids_rds.latest_path:
     if not args.dry_run:
        utils.tsv2xlsx(id_rds.with_suffix('.tsv'))
     if args.fake_file:
-        id_rds.with_suffix('.xlsx').touch(exist_ok)
-    
+        new_id_xlsx.touch(exist_ok)
+
+if id_rds_intermediates:
+    try:
+        id_rds_intermediates.remove(new_id_rds)
+    except:
+        pass
 
 # create iroc registration
 
@@ -222,6 +236,9 @@ utils.run_rave_reduce("iroc",optdict,rave_dumps.latest_path,rave_reduce_r,
 if args.fake_file:
     (stage_dir / Path(newnm)).touch(exist_ok=True)
     (stage_dir / Path(newnm)).with_suffix(".audit").touch(exist_ok=True)
+
+iroc_txt = (stage_dir / Path(newnm))
+iroc_audit = (stage_dir / Path(newnm)).with_suffix(".audit")
 
 # slide table
 
@@ -240,6 +257,10 @@ if args.fake_file:
     (stage_dir / Path(newnm)).with_suffix(".xlsx").touch(exist_ok=True)
     (stage_dir / Path(newnm)).with_suffix(".audit").touch(exist_ok=True)
 
+uams_tsv = (stage_dir / Path(newnm))
+uams_xlsx = (stage_dir / Path(newnm)).with_suffix(".xlsx")
+uams_audit = (stage_dir / Path(newnm)).with_suffix(".audit")
+
 # tcia metadata
 
 logger.info("Create tcia metadata table with date {}".format(id_rds_date))
@@ -256,3 +277,36 @@ if args.fake_file:
     (stage_dir / Path(newnm)).with_suffix(".xlsx").touch(exist_ok=True)
     (stage_dir / Path(newnm)).with_suffix(".audit").touch(exist_ok=True)
 
+tcia_tsv = (stage_dir / Path(newnm))
+tcia_xlsx = (stage_dir / Path(newnm)).with_suffix(".xlsx")
+tcia_audit = (stage_dir / Path(newnm)).with_suffix(".audit")
+
+# push products
+if args.distribute:
+
+    # id files
+    for p in id_rds_intermediates:
+        base = locs["ids_local"] / p.name
+        for tgt in [base, base.with_suffix(".tsv")]:
+            utils.cpy(p,tgt,dry_run=args.dry_run)
+
+    for p in [new_id_rds, new_id_rds_audit]:
+        for tgt in [ locs["ids_local"], locs["ids_rds_dest"] ]:
+            utils.cpy(p,tgt,dry_run=args.dry_run)
+
+    # id xlsx
+    for tgt in [ locs["ids_local"], locs["ids_dest"],
+                 locs["theradex_dest"], locs["mocha_dest"] ]:
+        utils.cpy(new_id_xlsx,tgt,dry_run=args.dry_run)
+
+    # uams / slide_table
+    for p in [uams_tsv, uams_xlsx, uams_audit]:
+        utils.cpy(p,locs["uams_local"],dry_run=args.dry_run)
+
+    utils.cpy(uams_xlsx, locs["uams_local"],dry_run=args.dry_run)
+    
+    # tcia
+    for p in [tcia_tsv, tcia_xlsx, tcia_audit]:
+        utils.cpy(p,locs["tcia_local"],dry_run=args.dry_run)
+        
+    utils.cpy(tcia_xlsx, locs["tcia_dest"],dry_run=args.dry_run)

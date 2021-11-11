@@ -13,8 +13,12 @@ paths:
     onedrive/BSI Data/inventory
   vari_slide_data_source: >-
     onedrive/BSI Data/slide data
+  ids_local: >-
+    ids
   ids_dest: >-
     onedrive/ID Management
+  ids_rds_dest: >-
+    onedrive/ID Management/id data files
   theradex_dest: >-
     box/CMB IT + Theradex
   tcia_dest: >-

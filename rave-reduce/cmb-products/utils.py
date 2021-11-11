@@ -1,4 +1,5 @@
 import re
+import os
 import pyexcel
 import xlsxwriter
 import subprocess
@@ -88,3 +89,10 @@ def trydate(dt):
             pass
     return ret
 
+def cpy(p,tgt,dry_run=False):
+    logger.info("Copy {} to {}".format(str(p),str(tgt)))
+    cp = " ".join( ["cp", str(p), str(tgt)] )
+    logger.debug("cmd: {}".format(cp))
+    if not dry_run:
+        os.popen(cp)
+    
