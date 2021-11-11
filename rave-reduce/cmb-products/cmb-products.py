@@ -1,95 +1,14 @@
+#! /usr/bin/env python
 import re
 import logging
 import argparse
 import datetime
-import pyexcel
-import xlsxwriter
 import yaml
 from pathlib import Path
-import subprocess
-from subprocess import run
-from file_series import file_series as fs
+import file_series as fs
+import utils
 from yaml import CLoader as loader
 from pdb import set_trace
-
-def run_rave_reduce(strategy, optdict, dumpdir, rr,
-                    outnm=None, newnm=None,  stage_dir=None, dry_run=False,
-                    create_xlsx=False):
-    opts = []
-    aud = []
-    for i in optdict:
-        opts.extend([i,str(optdict[i])])
-        if re.match(".*file.*",i):
-            aud.append(Path(optdict[i]).name)
-    cmd = [rr, "-s", strategy] + opts + [str(dumpdir)]
-    logger.debug("cmd: {}".format(" ".join(cmd)))
-    if not dry_run:
-        rc = run(cmd, capture_output=True, cwd=stage_dir)
-        try:
-            rc.check_returncode()
-        except subprocess.CalledProcessError as e:
-            logger.error("On run: {}\nstderr: {}\nstdout {}".format(
-                " ".join(cmd), e.stderr, e.stdout))
-            raise e
-        logger.debug("Rename rave-reduce output from {} to {}".format(outnm, newnm))
-        (stage_dir / Path(outnm)).rename( stage_dir / Path(newnm) )
-        if create_xlsx:
-            logger.info("Create xlsx file from {}".format( (stage_dir / Path(newnm) )))
-            tsv2xlsx( stage_dir / Path(newnm) )
-        if len(aud):
-            logger.info("Create new audit file {}".format((stage_dir / Path(newnm)).with_suffix(".audit")))
-            (stage_dir / Path(newnm)).with_suffix(".audit").write_text("\n".join(aud)+"\n")
-
-def tsv2xlsx(tsv_path):
-    xlsx_path = tsv_path.with_suffix(".xlsx")
-    tsv = pyexcel.get_sheet(file_name=str(tsv_path))
-    wb = xlsxwriter.Workbook(str(xlsx_path))
-    ws = wb.add_worksheet(tsv_path.name[0:31])
-    bold = wb.add_format({"bold":True})
-    date = wb.add_format({"num_format":"d-mmm-yy"})
-    hidden_rows=[]
-    col_max_width=[]
-    # headers
-    hdrs = tsv.array[0]
-    ws.set_row(0,None,bold)
-    ws.write_row(0,0,hdrs)
-    col_max_width = [len(x) for x in hdrs]
-    for row, data in enumerate(tsv.array[1:]):
-        row=row+1
-        for col, item in enumerate(data):
-            col_max_width[col] = col_max_width[col] if col_max_width[col] >= len(str(item)) else len(str(item))
-            if hdrs[col]=="ctep_id" and item=="NA":
-                hidden_rows.append(row)
-            if re.match(".*date.*",hdrs[col],flags=re.I):
-                dt = trydate(item)
-                item = dt if dt else item
-                ws.write(row,col,item, date)
-            else:
-                if item == "NA":
-                    ws.write_blank(row,col,None)
-                else:
-                    ws.write(row,col,item)
-    ws.autofilter(0,0,len(tsv.array)-1,len(tsv.array[0])-1)
-    if "ctep_id" in hdrs:
-        ws.filter_column(hdrs.index("ctep_id"), 'x != NA')
-    for row in hidden_rows:
-        ws.set_row(row, options={'hidden':True})
-    for col in range(len(hdrs)):
-        ws.set_column(col,col,col_max_width[col])
-    wb.close()
-        
-def trydate(dt):
-    ret = None
-    try:
-        ret = datetime.datetime.strptime(dt,"%d %b %Y")
-    except:
-        pass
-    if not ret:
-        try:
-            ret = datetime.datetime.strptime(dt,"%d %B %Y")
-        except:
-            pass
-    return ret
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--dry-run', action="store_true",
@@ -198,17 +117,10 @@ cur = { x[1].name for x in vari_inventory }
 vari_inv_to_do = fs.FileSeries(seq=[ x for x in vari_inventory if x[1].name in cur-set(aud)])
 
 # merge new rave dumps, earliest to latest
-if rave_dumps_to_do:
+if len(rave_dumps_to_do):
 
     for rdump in rave_dumps_to_do.iter_from_earliest():
         logger.info("Merge rave dump {}".format(rdump[1].name))
-        cmd = [ rave_reduce_r,
-                '-s','update_ids',
-                '--ids-file',str(id_rds.resolve()),
-                '-d', 
-                    rdump[0].strftime("%d %b %Y"),
-                str(rdump[1]) ]
-        logger.debug("cmd: {}".format(" ".join(cmd)))
         next_id_rds_tag = rdump[0].strftime("%Y%m%d")
         while (stage_dir/Path("entity_ids.{}.rds".format(next_id_rds_tag))).exists():
             mtch = re.match("^(202[0-9]{5})([.]([0-9]+))?$",next_id_rds_tag)
@@ -218,19 +130,19 @@ if rave_dumps_to_do:
                 next_id_rds_tag = "{}.1".format(mtch.group(1))
         next_id_rds = stage_dir / Path("entity_ids.{}.rds".format(next_id_rds_tag))
         logger.info("Creating intermediate id file {}".format(next_id_rds))
+        optdict = { '--ids-file':id_rds.resolve(),
+                    '-d': rdump[0].strftime("%d %b %Y") }
+        utils.run_rave_reduce(
+            'update_ids', optdict, rdump[1], rave_reduce_r,
+            outnm="entity_ids.update.rds",
+            newnm="entity_ids.update.rds".replace("update",next_id_rds_tag),
+            stage_dir=stage_dir,dry_run=args.dry_run)
+                             
         if not args.dry_run:
-            rc = run(cmd, capture_output=True, cwd=stage_dir)
-            try:
-                rc.check_returncode()
-            except subprocess.CalledProcessError as e:
-                logger.error("On run: {}\nstderr: {}\nstdout {}".format(
-                    " ".join(cmd), e.stderr, e.stdout))
-                raise e
-            (stage_dir / Path("entity_ids.update.rds")).rename(next_id_rds)
             (stage_dir / Path("entity_ids.update.tsv")).rename(next_id_rds.with_suffix('.tsv'))
         if args.fake_file:
             next_id_rds.touch(exist_ok=True)
-
+            next_id_rds.with_suffix('.tsv').touch(exist_ok=True)
         logger.debug("Add {} to audit list".format(rdump[1].name))
         aud.extend( [rdump[1].name] )
         id_rds = next_id_rds
@@ -240,18 +152,10 @@ if rave_dumps_to_do:
         id_rds_tag = next_id_rds_tag
 
 # then merge new var inventories, earliest to latest
-if vari_inv_to_do:
+if len(vari_inv_to_do):
 
     for vi in vari_inv_to_do.iter_from_earliest():
         logger.info("Merge vari inventory {}".format(vi[1].name))
-        cmd = [ rave_reduce_r,
-                '-s', 'update_ids',
-                '--ids-file',str(id_rds.resolve()),
-                '--bcr-file',str(vi[1]),
-                '-d', 
-                    vi[0].strftime("%d %b %Y"),
-                str(rdump[1])]
-        logger.debug("cmd: {}".format(" ".join(cmd)))
         if vi[0] > id_rds_date:
             next_id_rds_tag = vi[0].strftime("%Y%m%d")
         else:
@@ -264,15 +168,15 @@ if vari_inv_to_do:
                 next_id_rds_tag = "{}.1".format(mtch.group(1))
         next_id_rds = stage_dir / Path("entity_ids.{}.rds".format(next_id_rds_tag))
         logger.info("Creating intermediate id file {}".format(next_id_rds))
+        optdict = {'--ids-file': id_rds.resolve(),
+                   '--bcr-file': vi[1],
+                   '-d': vi[0].strftime("%d %b %Y")}
+        utils.run_rave_reduce(
+            'update_ids', optdict, rave_dumps.latest_path, rave_reduce_r,
+            outnm="entity_ids.update.rds",
+            newnm="entity_ids.update.rds".replace("update",next_id_rds_tag),
+            stage_dir=stage_dir,dry_run=args.dry_run)
         if not args.dry_run:
-            rc = run(cmd, capture_output=True, cwd=stage_dir)
-            try:
-                rc.check_returncode()
-            except subprocess.CalledProcessError as e:
-                logger.error("On run: {}\nstderr: {}\nstdout {}".format(
-                    " ".join(e.args), e.stderr, e.stdout))
-                raise e
-            (stage_dir / Path("entity_ids.update.rds")).rename(next_id_rds)
             (stage_dir / Path("entity_ids.update.tsv")).rename(next_id_rds.with_suffix('.tsv'))
         if args.fake_file:
             next_id_rds.touch(exist_ok=True)
@@ -301,7 +205,7 @@ if id_rds != entity_ids_rds.latest_path:
         new_id_rds_audit.touch(exist_ok=True)
     logger.info("Create xlsx from tsv {}".format(id_rds.with_suffix('.tsv')))
     if not args.dry_run:
-        tsv2xlsx(id_rds.with_suffix('.tsv'))
+       utils.tsv2xlsx(id_rds.with_suffix('.tsv'))
     if args.fake_file:
         id_rds.with_suffix('.xlsx').touch(exist_ok)
     
@@ -313,7 +217,7 @@ optdict = { '-s':'iroc',
             '--ids-file':id_rds.resolve() }
 outnm = [x for x in rr_conf["iroc"]["output"]][0]
 newnm = outnm.replace('_','-').replace('txt',".".join([id_rds_date.strftime("%Y-%m-%d"),"txt"]))
-run_rave_reduce("iroc",optdict,rave_dumps.latest_path,rave_reduce_r,
+utils.run_rave_reduce("iroc",optdict,rave_dumps.latest_path,rave_reduce_r,
                 outnm=outnm,newnm=newnm,stage_dir=stage_dir,dry_run=args.dry_run)
 if args.fake_file:
     (stage_dir / Path(newnm)).touch(exist_ok=True)
@@ -328,7 +232,7 @@ optdict = { '-s':'slide_table', '--ids-file':id_rds.resolve(),
         '-d':id_rds_date.strftime("%d %b %Y")}
 outnm = [x for x in rr_conf["slide_table"]["output"]][0]
 newnm = outnm.replace("tsv",".".join([id_rds_date.strftime("%Y%m%d"),"tsv"]))
-run_rave_reduce("slide_table",optdict,rave_dumps.latest_path,rave_reduce_r,
+utils.run_rave_reduce("slide_table",optdict,rave_dumps.latest_path,rave_reduce_r,
                 outnm=outnm,newnm=newnm,stage_dir=stage_dir,create_xlsx=True,
                 dry_run=args.dry_run)
 if args.fake_file:
@@ -344,7 +248,7 @@ optdict = { '--ids-file':id_rds.resolve(),
             '-d':id_rds_date.strftime("%d %b %Y")}
 outnm = [x for x in rr_conf["tcia_metadata"]["output"]][0]
 newnm = outnm.replace("tsv",".".join([id_rds_date.strftime("%Y%m%d"),"tsv"]))
-run_rave_reduce("tcia_metadata",optdict,rave_dumps.latest_path, rave_reduce_r,
+utils.run_rave_reduce("tcia_metadata",optdict,rave_dumps.latest_path, rave_reduce_r,
                 outnm=outnm,newnm=newnm,stage_dir=stage_dir,create_xlsx=True,
                 dry_run=args.dry_run)
 if args.fake_file:

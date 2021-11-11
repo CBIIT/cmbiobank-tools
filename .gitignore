@@ -5,3 +5,4 @@ rave-reduce/*.xlsx
 *~
 */*~
 */__pycache__/*
+*/*.pyc
