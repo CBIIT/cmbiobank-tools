@@ -14,16 +14,29 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--dry-run', action="store_true",
                     help="log rave-reduce commands, but do not run them")
 parser.add_argument('--conf-file', default="cmb-products.yaml")
+parser.add_argument('--log-file',default="cmb-products.log",
+                    help="Append log to named file")
+parser.add_argument('--no-log-file', action="store_true",
+                    help="Do not log to file")
 parser.add_argument('--verbose','-v',action="count")
 parser.add_argument('--quiet','-q',action="count")
+parser.add_argument('--use-staged',action="store_true",
+                    help="with --distribute, do not run rave-reduce workflow, use currently staged products only")
 parser.add_argument('--distribute',action="store_true",help="push products to delivery locations")
 parser.add_argument('--stage-dir', default=".cmb-build",help="directory for staging built products")
 parser.add_argument('--fake-file', action="store_true",help="touch files in stage directory")
 args = parser.parse_args()
 
 
-logging.basicConfig(style='{')
+logging.basicConfig(datefmt="%Y-%m-%d %H:%M:%S",format="%(asctime)s (%(name)s): [%(levelname)s] %(message)s")
 logger = logging.getLogger("cmb-products")
+logger.addHandler(logging.StreamHandler())
+if not args.no_log_file:
+    hdl = logging.FileHandler(args.log_file)
+    hdl.setFormatter(logging.Formatter(
+        datefmt="%Y-%m-%d %H:%M:%S",fmt="%(asctime)s (%(name)s): [%(levelname)s] %(message)s"))
+    logger.addHandler(hdl)
+    
 stage_dir = Path(args.stage_dir)
 
 if not stage_dir.exists():
@@ -281,32 +294,46 @@ tcia_tsv = (stage_dir / Path(newnm))
 tcia_xlsx = (stage_dir / Path(newnm)).with_suffix(".xlsx")
 tcia_audit = (stage_dir / Path(newnm)).with_suffix(".audit")
 
-# push products
-if args.distribute:
+# distribution
 
+logger.info("Create distribution source-target list in {}".str(locs["distro_file"]))
+
+with open(locs["distro_file"],mode="w") as dfile:
     # id files
     for p in id_rds_intermediates:
         base = locs["ids_local"] / p.name
         for tgt in [base, base.with_suffix(".tsv")]:
-            utils.cpy(p,tgt,dry_run=args.dry_run)
+            print("\t".join(p,tgt),file=dfile)
+#            utils.cpy(p,tgt,dry_run=args.dry_run)
 
     for p in [new_id_rds, new_id_rds_audit]:
         for tgt in [ locs["ids_local"], locs["ids_rds_dest"] ]:
-            utils.cpy(p,tgt,dry_run=args.dry_run)
+            print("\t".join(p,tgt),file=dfile)            
+#            utils.cpy(p,tgt,dry_run=args.dry_run)
 
     # id xlsx
     for tgt in [ locs["ids_local"], locs["ids_dest"],
                  locs["theradex_dest"], locs["mocha_dest"] ]:
-        utils.cpy(new_id_xlsx,tgt,dry_run=args.dry_run)
+        print("\t".join(new_id_xlsx,tgt),file=dfile)
+#        utils.cpy(new_id_xlsx,tgt,dry_run=args.dry_run)
 
     # uams / slide_table
     for p in [uams_tsv, uams_xlsx, uams_audit]:
-        utils.cpy(p,locs["uams_local"],dry_run=args.dry_run)
+        print("\t".join(p,locs["uams_local"]),file=dfile)
+        #        utils.cpy(p,locs["uams_local"],dry_run=args.dry_run)
 
-    utils.cpy(uams_xlsx, locs["uams_local"],dry_run=args.dry_run)
-    
+    print("\t".join(uams_xlsx,locs["uams_local"],file=dfile)p
+    #    utils.cpy(uams_xlsx, locs["uams_local"],dry_run=args.dry_run)
+
     # tcia
     for p in [tcia_tsv, tcia_xlsx, tcia_audit]:
-        utils.cpy(p,locs["tcia_local"],dry_run=args.dry_run)
-        
-    utils.cpy(tcia_xlsx, locs["tcia_dest"],dry_run=args.dry_run)
+        print("\t".join(p, locs["tcia_local"]),file=dfile)
+#        utils.cpy(p,locs["tcia_local"],dry_run=args.dry_run)
+    print("\t".join(tcia_xlsx, locs["tcia_dest"]),file=dfile)
+#    utils.cpy(tcia_xlsx, locs["tcia_dest"],dry_run=args.dry_run)
+
+if args.distribute:
+    with open(locs["distro_file"]) as dfile:
+        for l in dfile:
+          (p,tgt) = l.rstrip().split("\t")
+          utils.cpy(p,tgt,dry_run=args.dry_run)
