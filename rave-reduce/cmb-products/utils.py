@@ -1,5 +1,6 @@
 import re
 import os
+import shlex
 import pyexcel
 import xlsxwriter
 import subprocess
@@ -91,7 +92,7 @@ def trydate(dt):
 
 def cpy(p,tgt,dry_run=False):
     logger.info("Copy {} to {}".format(str(p),str(tgt)))
-    cp = " ".join( ["cp", str(p), str(tgt)] )
+    cp = " ".join( ["cp", shlex.quote(str(p)), shlex.quote(str(tgt))] )
     logger.debug("cmd: {}".format(cp))
     if not dry_run:
         os.popen(cp)

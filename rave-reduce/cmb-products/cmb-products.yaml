@@ -1,7 +1,7 @@
 paths:
   base_path: /Users/jensenma/Documents/BioBank/bb-data/cmbiobank-tools/rave-reduce/
   distro_file:
-    .cmb-dist-file
+    cmb-dist-file
   rave_reduce_r:
     rave-reduce.r
   rave_reduce_config:
