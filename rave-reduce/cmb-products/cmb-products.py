@@ -32,32 +32,41 @@ parser.add_argument('--fake-file', action="store_true",help="touch files in stag
 args = parser.parse_args()
 
 
-logging.basicConfig(datefmt="%Y-%m-%d %H:%M:%S",format="%(asctime)s (%(name)s): [%(levelname)s] %(message)s")
 logger = logging.getLogger("cmb-products")
-logger.addHandler(logging.StreamHandler())
+logger.setLevel(logging.DEBUG)
+
 if not args.no_log_file:
-    hdl = logging.FileHandler(args.log_file)
-    hdl.setFormatter(logging.Formatter(
+    logfile = logging.FileHandler(args.log_file)
+    logfile.setFormatter(logging.Formatter(
         datefmt="%Y-%m-%d %H:%M:%S",fmt="%(asctime)s (%(name)s): [%(levelname)s] %(message)s"))
-    logger.addHandler(hdl)
+    logfile.setLevel(logging.DEBUG)
+    logger.addHandler(logfile)
     
 stage_dir = Path(args.stage_dir)
 
 if not stage_dir.exists():
     stage_dir.mkdir()
 
+logstream = logging.StreamHandler()
+logstream.setFormatter(logging.Formatter(
+        datefmt="%Y-%m-%d %H:%M:%S",fmt="%(asctime)s (%(name)s): [%(levelname)s] %(message)s"))
+
 verb = 3 + args.verbose - args.quiet
 
 if verb == 3:
-    logger.setLevel(logging.WARNING)
+    logstream.setLevel(logging.WARNING)
 elif verb == 4:
-    logger.setLevel(logging.INFO)
+    logstream.setLevel(logging.INFO)
 elif verb == 5:
-    logger.setLevel(logging.DEBUG)
+    logstream.setLevel(logging.DEBUG)
 elif verb == 2:
-    logger.setLevel(logging.ERROR)
+    logstream.setLevel(logging.ERROR)
 elif verb == 1:
-    logger.setLevel(logging.CRITICAL)
+    logstream.setLevel(logging.CRITICAL)
+else:
+    pass
+
+logger.addHandler(logstream)
 
 logger.info("Loading config yaml")
 conf = yaml.load(open(args.conf_file,"r"),Loader=loader)
@@ -325,12 +334,16 @@ logger.info("Create distribution source-target list in {}".format(str(locs["dist
 with open(locs["distro_file"],mode="w") as dfile:
     # id files
     for p in id_rds_intermediates:
+        if not p:
+            continue
         base = locs["ids_local"] / p.name
         for tgt in [base, base.with_suffix(".tsv")]:
             pr_ptgt(p,tgt,dfile)
 #            utils.cpy(p,tgt,dry_run=args.dry_run)
 
     for p in [new_id_rds, new_id_rds_audit]:
+        if not p:
+            continue
         for tgt in [ locs["ids_local"], locs["ids_rds_dest"] ]:
             pr_ptgt(p,tgt,dfile)
 #            utils.cpy(p,tgt,dry_run=args.dry_run)
@@ -338,6 +351,8 @@ with open(locs["distro_file"],mode="w") as dfile:
     # id xlsx
     for tgt in [ locs["ids_local"], locs["ids_dest"],
                  locs["theradex_dest"], locs["mocha_dest"] ]:
+        if not new_id_xlsx:
+            continue
         pr_ptgt(new_id_xlsx,tgt,dfile)
 #        utils.cpy(new_id_xlsx,tgt,dry_run=args.dry_run)
 
@@ -346,7 +361,7 @@ with open(locs["distro_file"],mode="w") as dfile:
         pr_ptgt(p,locs["uams_local"],dfile)
         #        utils.cpy(p,locs["uams_local"],dry_run=args.dry_run)
 
-    pr_ptgt(uams_xlsx,locs["uams_local"],dfile)
+    pr_ptgt(uams_xlsx,locs["uams_dest"],dfile)
     #    utils.cpy(uams_xlsx, locs["uams_local"],dry_run=args.dry_run)
 
     # tcia
