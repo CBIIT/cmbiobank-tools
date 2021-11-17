@@ -130,10 +130,7 @@ if args.distribute_only:
         for l in dfile:
             (p,tgt) = l.rstrip().split("\t")
             utils.cpy(p,tgt,dry_run=args.dry_run)
-    try:
-        sys.exit()
-    except:
-        pass
+    sys.exit()
 
 # update ids
 
