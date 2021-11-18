@@ -51,7 +51,7 @@ sources and destinations must be mounted locally as network volumes.
 
 The hard work is done by executing
 [`rave-reduce.r`](../rave-reduce). Note that both the script file and
-the rave-reduce config file must be available to `cnmb-products` and
+the rave-reduce config file must be available to `cmb-products` and
 specified in the `cmb-products.yaml` configuration.
 
 The script logs events and inputs, including system command lines. The
@@ -66,7 +66,7 @@ line, is also created. If `cmb-products.py` is run with the
 `--distribute` option, a copy from source to target is performed.
 Without that option, one can inspect the products before distribution.
 Run with the option `--distribute-only` to copy files to destinations
-pas a second step, without re-creating the product files.
+as a second step, without re-creating the product files.
 
 Use `--dry-run` to see what would happen via the log, but not create
 or distribute any files.

@@ -6,7 +6,7 @@ CMB data product scripting
 This module contains the class FileSeries. This class stores a list 
 of duples (datetime.date, pathlib.Path) of paths in a specified 
 directory. The paths that are stored must contain a datestamp of a
-specified format in there names to be registered in the FileSeries.
+specified format in their names to be registered in the FileSeries.
 """
 
 import datetime
@@ -26,7 +26,9 @@ from pathlib import Path
 #  single-digit months and days present
 
 # vari slide data export xlsx naming convention: "<Monthname> Export.xlsx"
-#  - will be a problem
+#  - filenames are handled in rave-reduce.r - these do not require a file series
+#    in cmb-products
+
 
 date_re = re.compile(".*(202[0-9]{5})[._]")
 date_iroc_re = re.compile(".*(202[0-9])-([0-9]{2})-([0-9]{2})[._]")
