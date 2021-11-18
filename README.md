@@ -21,12 +21,12 @@ CMB data products automatically, with logging.
 
 Information related to the Rave table schema.
 
-* [Catalog Data](./Catalog Demo)
+* [Catalog Data scripts](/Catalog%20Demo/Catalog%20Demo)
 
 Python scripts for reducing Rave data to a subset and format required for the 
 Biobank Catalog.
 
-* [Study Review](./Study Review)
+* [Study Review scripts](/Study%20Review/Laura)
 
 Python scripts for reducing Rave data to a convenient spreadsheet format 
 for the CMB statisician's analyses.
