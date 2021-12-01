@@ -336,14 +336,12 @@ with open(locs["distro_file"],mode="w") as dfile:
         base = locs["ids_local"] / p.name
         for tgt in [base, base.with_suffix(".tsv")]:
             pr_ptgt(p,tgt,dfile)
-#            utils.cpy(p,tgt,dry_run=args.dry_run)
 
     for p in [new_id_rds, new_id_rds_audit]:
         if not p:
             continue
         for tgt in [ locs["ids_local"], locs["ids_rds_dest"] ]:
             pr_ptgt(p,tgt,dfile)
-#            utils.cpy(p,tgt,dry_run=args.dry_run)
 
     # id xlsx
     for tgt in [ locs["ids_local"], locs["ids_dest"],
@@ -351,23 +349,23 @@ with open(locs["distro_file"],mode="w") as dfile:
         if not new_id_xlsx:
             continue
         pr_ptgt(new_id_xlsx,tgt,dfile)
-#        utils.cpy(new_id_xlsx,tgt,dry_run=args.dry_run)
+
+    # iroc (local move)
+    for p in [iroc_txt, iroc_audit]:
+        pr_ptgt(p,locs["iroc_local"],dfile)
 
     # uams / slide_table
     for p in [uams_tsv, uams_xlsx, uams_audit]:
         pr_ptgt(p,locs["uams_local"],dfile)
-        #        utils.cpy(p,locs["uams_local"],dry_run=args.dry_run)
 
     pr_ptgt(uams_xlsx,locs["uams_dest"],dfile)
-    #    utils.cpy(uams_xlsx, locs["uams_local"],dry_run=args.dry_run)
 
     # tcia
     for p in [tcia_tsv, tcia_xlsx, tcia_audit]:
         pr_ptgt(p, locs["tcia_local"],dfile)
-#        utils.cpy(p,locs["tcia_local"],dry_run=args.dry_run)
 
     pr_ptgt(tcia_xlsx, locs["tcia_dest"], dfile)
-#    utils.cpy(tcia_xlsx, locs["tcia_dest"],dry_run=args.dry_run)
+
 
 if args.distribute:
     with open(locs["distro_file"]) as dfile:
