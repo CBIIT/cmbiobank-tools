@@ -6,7 +6,7 @@ spec = []
 def spec_trans():
     os.chdir("/Users/mohandasa2/Desktop/Laura-study/RAVE")
     filespecimen=open("CMB_specimen_transmittal.CSV",'r')
-    MoChaFile=open("MoCha CLIA - 2021-09-10.csv",'r',encoding="ISO-8859-1")
+    MoChaFile=open("MoCha CLIA - 2021-09-23.csv",'r',encoding="ISO-8859-1")
     spec_transOutput=open("specimen_transmittal_output_seperate.txt",'w')
     spec_transOutput.write("SubjectID"+"\t"+"Specimen ID"+"\t"+"Blood Sample Quality"+"\t" + "Sub Specimen ID"+"\t" +"Associated RNA Sub Specimen"+"\t"+"Biospecimen Test Name"+"\t"+"VARI QC Start Date"+"\n")
     filefh=csv.reader(filespecimen)

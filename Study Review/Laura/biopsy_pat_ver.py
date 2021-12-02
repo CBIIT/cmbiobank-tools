@@ -54,7 +54,6 @@ for i in biofh:
             # print(final)
             # print(final,sub_final)
             if final[0] in bioList:
-                # print(bioList.get(search3))
                 if bioList.get(search3)[0]==['NA','NA','NA','NA','NA','NA'] and sub_final !=['NA','NA','NA','NA','NA','NA']:
                     # print(final[0],"NO")
                     bioList[search3].append(sub_final)
@@ -71,6 +70,7 @@ for i in biofh:
             else:
                 bioList[search3]=[]
                 bioList[search3].append(sub_final)
+            # print(final[0], sub_final, "myyyyyyy")
 
 
 oncores = open("biopsy_pathOutput.txt", 'w')
@@ -83,7 +83,7 @@ for i in concofh:
             oncores.write("\t".join(i) + "\t" + "\t".join(bioList.get(newsearch)[0]) + "\n")
     else:
         if i[0].startswith("SubjectID"):
-            oncores.write("\t".join(i) + "\t" + "Sample suitable for analysis before Enrichment" + "\t" + "Enrichment Instructions" + "\t" + "Sample suitable for analysis after Enrichment" + "\t" + "Comment" +"\t" + "MIORRES_TUCONT_X1" + "\t" + "MIORRES_TUCONT_X2" + "\n")
+            oncores.write("\t".join(i) + "\t" + "Sample suitable for analysis before Enrichment" + "\t" + "Enrichment Instructions " + "\t" + "Sample suitable for analysis after Enrichment" + "\t" + "Comment " +"\t" + "Estimated Tumor Content Before Enrichment" + "\t" + "Estimated Tumor Content After Enrichment " + "\n")
         else:
             oncores.write("\t".join(i) + "\t" + "NA" + "\t" + "NA" + "\t" + "NA" + "\t" + "NA" +"\t" + "NA" + "\t" + "NA" + "\n")
 print(len(bioList))
