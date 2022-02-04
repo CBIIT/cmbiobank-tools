@@ -44,10 +44,6 @@ strategies <- list(
         ## argument 'pulldate' is ignored in this function
         ## pull_date from the entity_ids file is used
                                         # cras  <- read_excel(config$cra_excel,1)
-        withdrawn <- NULL
-        if (file.exists(config$withdrawn)) {
-            withdrawn <- read_tsv(config$withdrawn);
-        }
         pub_ids  <- entity_ids %>%
             filter(!is.na(ctep_id)) %>%
             group_by(ctep_id) %>%
@@ -55,6 +51,14 @@ strategies <- list(
             mutate( date = dmy(pull_date) ) %>%
             arrange(ctep_id, date) %>%
             summarize( pub_id = first(pub_id), up_id = first(up_id), pull_date=first(pull_date), date = first(date) )
+        withdrawn <- dta$off_study %>%
+            select( Subject, DSDECOD_OS ) %>%
+            transmute(Subject,
+                      state = str_to_upper(str_extract(DSDECOD_OS, "^[^ ,]+"))) %>%
+            inner_join(
+                entity_ids %>% filter(!is.na(ctep_id)) %>%
+                select(ctep_id, pub_id),
+                by=c( "Subject" = "ctep_id"))
         tbl <- dta$enrollment %>% left_join(pub_ids, by=c("Subject" = "ctep_id")) %>%
             select(project, Subject, Site,CTEPID, DSSTDAT_ENROLLMENT_RAW,CTEP_SDC_MED_V10_CD, pub_id,up_id,pull_date) %>%
             left_join( dta$shipping_status %>%
@@ -65,7 +69,12 @@ strategies <- list(
               summarize( CRA = first(EMAIL_SHP)),
               by = c("Subject"))
         if (!is.null(withdrawn)) {
-            tbl <- tbl %>% mutate( CRA = if_else( pub_id %in% withdrawn$pub_id, "WITHDRAWN", CRA ) )
+            tbl <- tbl %>% mutate( CRA = if_else(
+                                       pub_id %in% withdrawn$pub_id,
+                                       map_chr(pub_id,
+                                               function(x) (withdrawn %>% filter( pub_id == x ))$state[1]
+                                               ),
+                                       CRA ) )
         }
         tbl %>%
             transmute("Date Created" = pull_date, #str_interp("${pull_date}"),
