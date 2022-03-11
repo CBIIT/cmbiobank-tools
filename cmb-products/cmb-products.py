@@ -148,24 +148,24 @@ logger.info("Entity ids starting rds file: {}".format(id_rds))
 id_rds_audit = id_rds.with_suffix(".audit")
 if not id_rds_audit.exists():
     logger.error("No audit file {} found for starting entity id rds".format(id_rds_audit))
-    raise RuntimeException("No audit file found")
+    raise RuntimeError("No audit file found")
 
 with id_rds_audit.open() as f:
     aud = [ x.rstrip() for x in f ]
 
 # rave dumps not present in audit file
-cur = { x[1].name for x in rave_dumps }
-rave_dumps_to_do = fs.FileSeries(seq=[ x for x in rave_dumps if x[1].name in cur-set(aud) ])
+cur = { x[2].name for x in rave_dumps }
+rave_dumps_to_do = fs.FileSeries(seq=[ x for x in rave_dumps if x[2].name in cur-set(aud) ])
 # inventories not present in audit file
-cur = { x[1].name for x in vari_inventory }
-vari_inv_to_do = fs.FileSeries(seq=[ x for x in vari_inventory if x[1].name in cur-set(aud)])
+cur = { x[2].name for x in vari_inventory }
+vari_inv_to_do = fs.FileSeries(seq=[ x for x in vari_inventory if x[2].name in cur-set(aud)])
 id_rds_intermediates = []
 
 # merge new rave dumps, earliest to latest
 if len(rave_dumps_to_do):
 
     for rdump in rave_dumps_to_do.iter_from_earliest():
-        logger.info("Merge rave dump {}".format(rdump[1].name))
+        logger.info("Merge rave dump {}".format(rdump[2].name))
         next_id_rds_tag = rdump[0].strftime("%Y%m%d")
         while (stage_dir/Path("entity_ids.{}.rds".format(next_id_rds_tag))).exists():
             mtch = re.match("^(202[0-9]{5})([.]([0-9]+))?$",next_id_rds_tag)
@@ -178,7 +178,7 @@ if len(rave_dumps_to_do):
         optdict = { '--ids-file':id_rds.resolve(),
                     '-d': rdump[0].strftime("%d %b %Y") }
         utils.run_rave_reduce(
-            'update_ids', optdict, rdump[1], rave_reduce_r,
+            'update_ids', optdict, rdump[2], rave_reduce_r,
             outnm="entity_ids.update.rds",
             newnm="entity_ids.update.rds".replace("update",next_id_rds_tag),
             stage_dir=stage_dir,dry_run=args.dry_run)
@@ -188,8 +188,8 @@ if len(rave_dumps_to_do):
         if args.fake_file:
             next_id_rds.touch(exist_ok=True)
             next_id_rds.with_suffix('.tsv').touch(exist_ok=True)
-        logger.debug("Add {} to audit list".format(rdump[1].name))
-        aud.extend( [rdump[1].name] )
+        logger.debug("Add {} to audit list".format(rdump[2].name))
+        aud.extend( [rdump[2].name] )
         id_rds = next_id_rds
         id_rds_date = datetime.date(int(next_id_rds_tag[0:4]),
                                     int(next_id_rds_tag[4:6]),
@@ -201,7 +201,7 @@ if len(rave_dumps_to_do):
 if len(vari_inv_to_do):
 
     for vi in vari_inv_to_do.iter_from_earliest():
-        logger.info("Merge vari inventory {}".format(vi[1].name))
+        logger.info("Merge vari inventory {}".format(vi[2].name))
         if vi[0] > id_rds_date:
             next_id_rds_tag = vi[0].strftime("%Y%m%d")
         else:
@@ -215,7 +215,7 @@ if len(vari_inv_to_do):
         next_id_rds = stage_dir / Path("entity_ids.{}.rds".format(next_id_rds_tag))
         logger.info("Creating intermediate id file {}".format(next_id_rds))
         optdict = {'--ids-file': id_rds.resolve(),
-                   '--bcr-file': vi[1],
+                   '--bcr-file': vi[2],
                    '-d': vi[0].strftime("%d %b %Y")}
         utils.run_rave_reduce(
             'update_ids', optdict, rave_dumps.latest_path, rave_reduce_r,
@@ -228,8 +228,8 @@ if len(vari_inv_to_do):
             next_id_rds.touch(exist_ok=True)
             next_id_rds.with_suffix('.tsv').touch(exist_ok=True)
 
-        logger.debug("Add {} to audit list".format(vi[1].name))
-        aud.extend( [ vi[1].name ] )
+        logger.debug("Add {} to audit list".format(vi[2].name))
+        aud.extend( [ vi[2].name ] )
         id_rds = next_id_rds
         id_rds_date = datetime.date(int(next_id_rds_tag[0:4]),
                                     int(next_id_rds_tag[4:6]),

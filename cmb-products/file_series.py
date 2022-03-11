@@ -30,9 +30,9 @@ from pathlib import Path
 #    in cmb-products
 
 
-date_re = re.compile(".*(202[0-9]{5})[._]")
-date_iroc_re = re.compile(".*(202[0-9])-([0-9]{2})-([0-9]{2})[._]")
-date_vari_re = re.compile(".* ([0-9]{1,2})[.]([0-9]{1,2})[.](202[0-9])[.]xlsx")
+date_re = re.compile(".*(202[0-9]{5})([.]([0-9]+))?[._]")
+date_iroc_re = re.compile(".*(202[0-9])-([0-9]{2})-([0-9]{2})([.]([0-9]+))?[._]")
+date_vari_re = re.compile(".* ([0-9]{1,2})[.]([0-9]{1,2})[.](202[0-9])([.]([0-9]+))?[.]xlsx")
 
 class FileSeries(object):
     def __init__(self, path=None, seq=None):
@@ -41,10 +41,11 @@ class FileSeries(object):
             ar = [x for x in path.iterdir() if date_re.match(x.name)]
             for p in ar:
                 date_str = date_re.match(p.name).group(1)
+                ver = int(date_re.match(p.name).group(3) or 0)
                 dt=datetime.date(int(date_str[0:4]),
                                  int(date_str[4:6]),
                                  int(date_str[6:8]))
-                self.series.extend([(dt,p)])
+                self.series.extend([(dt,ver,p)])
             # iroc kludge
             if not ar:
                 ar = [x for x in path.iterdir() if date_iroc_re.match(x.name)]
@@ -53,7 +54,8 @@ class FileSeries(object):
                     dt=datetime.date(int(mtch.group(1)),
                                      int(mtch.group(2)),
                                      int(mtch.group(3)))
-                    self.series.extend([(dt,p)])
+                    ver = int(mtch.group(5) or 0)
+                    self.series.extend([(dt,ver,p)])
             # vari kludge
             if not ar:
                 ar = [x for x in path.iterdir() if date_vari_re.match(x.name)]
@@ -62,12 +64,13 @@ class FileSeries(object):
                     dt=datetime.date(int(mtch.group(3)),
                                      int(mtch.group(1)),
                                      int(mtch.group(2)))
-                    self.series.extend([(dt,p)])
+                    ver = int(mtch.group(5) or 0)
+                    self.series.extend([(dt,ver,p)])
             if not self.series:
                 raise RuntimeError("path contains no files with dates in filename")
         if seq:
             self.series = seq
-        self.series.sort(key=lambda x:x[0],reverse=True)
+        self.series.sort(key=lambda x:(x[0],x[1]),reverse=True)
 
     def __len__(self):
         return len(self.series)
@@ -83,7 +86,7 @@ class FileSeries(object):
     @property
     def latest_path(self):
         if self.series:
-            return self.series[0][1]
+            return self.series[0][2]
         else:
             return None
     @property
@@ -95,7 +98,7 @@ class FileSeries(object):
     @property
     def earliest_path(self):
         if self.series:
-            return self.series[-1][1]
+            return self.series[-1][2]
         else:
             return None
 
@@ -117,7 +120,7 @@ class FileSeries(object):
 
     def by_suffix(self, suffix):
         """Returns a FileSeries, the subset of the invocant's files with the given suffix."""
-        paths = [x for x in self.series if x[1].suffix == suffix]
+        paths = [x for x in self.series if x[2].suffix == suffix]
         if paths:
             return FileSeries(seq=paths)
         else:
