@@ -315,14 +315,17 @@ strategies <- list(
                   "10% AND 19%" = "10% - 19%",
                   "20% AND 49%" = "20% - 49%",
                   "50% AND 69%" = "50% - 69%",
-                  "70%" = ">=70%" )
+                  "70%" = ">=70%"
+                  )
         getrng <- function (z) map_chr(z, function (y) if (!is.na(y)) tc_rngs[map_lgl( names(tc_rngs), function (x) grepl(x,y))] else NA)
         pt_info <- dta$enrollment %>%
             select( Subject, matches("RACE_.*_STD"),ETHNIC_STD,
                    CTEP_SDC_MED_V10_CD, MHLOC_STD, AGE,
-                   SEX_STD, GENDER_STD ) %>%
+                   SEX_STD, GENDER_STD, DSSTDAT_ENROLLMENT ) %>%
             mutate( RACE = str_c(str_replace_na(RACE_01_STD,""),str_replace_na(RACE_02_STD,""),str_replace_na(RACE_03_STD,""),str_replace_na(RACE_04_STD,""),str_replace_na(RACE_05_STD,""),str_replace_na(RACE_06_STD,""),str_replace_na(RACE_07_STD,"")) ) %>%
-            select( -matches("RACE_.*") )
+            mutate( DATE_OF_ENROLLMENT = dmy_hms(DSSTDAT_ENROLLMENT) ) %>%
+            select( -matches("RACE_.*") ) %>%
+            select( -DSSTDAT_ENROLLMENT )
 
         spec_info <- dta$biopsy_pathology_verification_and_assessment %>%
             select(MIREFID,BSREFID_DRV,SPLADQFL_X1_STD,
@@ -337,7 +340,8 @@ strategies <- list(
             filter(grepl("Slide",material_type)) %>%
             select("Subject ID","BSI ID",
                    vari_necrosis = "QC % Necrosis (Moonshot)",
-                   vari_cellularity = "QC Tumor Cellularity (Moonshot)") %>%
+                   vari_cellularity = "QC Tumor Cellularity (Moonshot)",
+                   date_of_collection = "Collection Date/Time") %>%
             inner_join(entity_ids,
                        by = c("BSI ID"="bcr_subspec_id","Subject ID"="ctep_id"))
 
@@ -352,7 +356,10 @@ strategies <- list(
             mutate(
                 Percent_Tumor_Nuclei = dplyr::coalesce(Percent_Tumor_Nuc_Enriched, Percent_Tumor_Nuc),
                 Is_Enriched = map2_chr(is.na(Percent_Tumor_Nuc),is.na(Percent_Tumor_Nuc_Enriched),function(x,y) if (x) { NA } else if (y) {"N"} else {"Y"})
-                ) %>%
+            ) %>%
+            mutate(
+                Days_To_Collection = round((date_of_collection - DATE_OF_ENROLLMENT)/86400)
+            ) %>%
             select( pub_id, pub_subspec_id,
                    Timepoint = ASMTTPT_STD,
                    Topographic_Site = CTEP_SDC_MED_V10_CD,
@@ -361,6 +368,7 @@ strategies <- list(
                    Percent_Necrosis = vari_necrosis,
                    Percent_Tumor_Nuclei,
                    Is_Enriched,
+                   Days_To_Collection,
                    Gender = SEX_STD, Age = AGE, Ethnicity = ETHNIC_STD,
                    Race = RACE) %>%
             mutate(
