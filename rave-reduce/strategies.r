@@ -358,7 +358,7 @@ strategies <- list(
                 Is_Enriched = map2_chr(is.na(Percent_Tumor_Nuc),is.na(Percent_Tumor_Nuc_Enriched),function(x,y) if (x) { NA } else if (y) {"N"} else {"Y"})
             ) %>%
             mutate(
-                Days_To_Collection = round((date_of_collection - DATE_OF_ENROLLMENT)/86400)
+                Days_From_Enrollment = round((date_of_collection - DATE_OF_ENROLLMENT)/86400)
             ) %>%
             select( pub_id, pub_subspec_id,
                    Timepoint = ASMTTPT_STD,
@@ -368,7 +368,7 @@ strategies <- list(
                    Percent_Necrosis = vari_necrosis,
                    Percent_Tumor_Nuclei,
                    Is_Enriched,
-                   Days_To_Collection,
+                   Days_From_Enrollment,
                    Gender = SEX_STD, Age = AGE, Ethnicity = ETHNIC_STD,
                    Race = RACE) %>%
             mutate(
