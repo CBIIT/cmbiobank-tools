@@ -93,6 +93,8 @@ if (is.null(opts$options$bcr_file) | (opts$options$bcr_file == "NONE")) {
         bcr_report  <- NULL
     } else {
         bcr_report  <- read_excel(opts$options$bcr_file)
+        ## Check for non rave "original id" and purge - caused issue at 03/28/2022 run
+        bcr_report <- bcr_report %>% filter( grepl("^10323",`Original Id`) )
     }
 }
 
@@ -109,6 +111,7 @@ if (is.null(opts$options$bcr_slide_file_dir) | (opts$options$bcr_slide_file_dir 
         for (f in ff) bcr_slides  <- bcr_slides %>%
                           bind_rows(
                               read_excel(file.path(opts$options$bcr_slide_file_dir,f)))
+        bcr_slides <- bcr_slides %>% unique()
     }
 }
 

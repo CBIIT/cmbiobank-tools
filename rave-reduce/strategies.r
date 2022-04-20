@@ -277,7 +277,7 @@ strategies <- list(
         need_files()
         need_bcr_report()
         need_bcr_slides()
-       slide_mapping  <- entity_ids %>%
+       slide_mapping  <- entity_ids %>% filter( !is.na(pub_subspec_id) ) %>%
            inner_join(bcr_report, by = c("bcr_subspec_id" = "BSI ID")) %>%
            inner_join(
                dta$enrollment %>% select( Subject, CTEP_SDC_MED_V10_CD ) %>%
@@ -306,6 +306,7 @@ strategies <- list(
             unique()
        
         ## final table should meet reqs as of BF-S mtg 8/3/21 and excel "...with column headers needed"
+        ## slide_mapping
         slide_mapping
     },
     tcia_metadata = function(pull_date) {
