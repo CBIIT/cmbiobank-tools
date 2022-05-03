@@ -5,7 +5,7 @@ suppressPackageStartupMessages(library(lubridate))
 suppressPackageStartupMessages(library(readxl))
 suppressPackageStartupMessages(library(optparse))
 suppressPackageStartupMessages(library(config))
-
+options(error = traceback)
 ## default common columns (denormalized across tables coming from Rave)
 com_cols_default <- c("project", "subjectId", "Subject", "siteid", "Site","SiteNumber")
 
@@ -28,6 +28,16 @@ xtbls_default <- c("specimen_tracking_enrollment","enrollment","blood_collection
 ## attempt to automate (or specify in config) joins
 
 tday <- suppressMessages(stamp("28 Feb 1956"))(today())
+lddta <- function(dtadir, nms=NULL) {
+    files <<- list.files(dtadir) %>% grep(".*CSV", x=., value=T)
+    if (!is.null(nms)) {
+        files <- grep(nms, files, value=T)
+    }
+    tbls  <- (files %>% str_match("^[A-Z_]*(.*)[.].*$"))[,2]
+    dta  <-  map(files, function (x) tibble(read_csv(file.path(dtadir,x)))) 
+    names(dta) <- tbls
+    dta
+}
 oparser <- OptionParser(
     usage = "%prog dumpdir",
     option_list = list(
@@ -83,6 +93,8 @@ if (is.null(opts$options$bcr_file) | (opts$options$bcr_file == "NONE")) {
         bcr_report  <- NULL
     } else {
         bcr_report  <- read_excel(opts$options$bcr_file)
+        ## Check for non rave "original id" and purge - caused issue at 03/28/2022 run
+        bcr_report <- bcr_report %>% filter( grepl("^10323",`Original Id`) )
     }
 }
 
@@ -99,6 +111,7 @@ if (is.null(opts$options$bcr_slide_file_dir) | (opts$options$bcr_slide_file_dir 
         for (f in ff) bcr_slides  <- bcr_slides %>%
                           bind_rows(
                               read_excel(file.path(opts$options$bcr_slide_file_dir,f)))
+        bcr_slides <- bcr_slides %>% unique()
     }
 }
 
@@ -136,22 +149,17 @@ stopifnot(file.exists(file.path(opts$options$config_dir,config$strategies_file))
 source(file.path(opts$options$config_dir,config$strategies_file))
 
 ## this sets up some variables used in strategies.r
-files <- grep("CSV",dir(dtadir),value=T) # assumes dump in CSV
-if (length(files)>0) {
-    tbls  <- files %>% str_sub(5,-5)
-    dta  <- suppressMessages( map(files, function (x) tibble(read_csv(file.path(dtadir,x)))) )
-    names(dta)  <- tbls
-    ## now dta is a list of all tables, named appropriately (e.g., dta$specimen_tracking_enrollment, etc.)
+dta <- suppressMessages(lddta(dtadir))
+## now dta is a list of all tables, named appropriately (e.g., dta$specimen_tracking_enrollment, etc.)
 
-    ## this adds rave_spec_id to the subject_tracking_enrollment table:
-    dta$specimen_tracking_enrollment <- dta$specimen_tracking_enrollment %>%
-        inner_join( dta$administrative_enrollment %>%
-                    select(Subject, USUBJID)) %>%
-        mutate(rave_spec_id = str_c(project, USUBJID, RecordPosition, sep="-"))
+## this adds rave_spec_id to the subject_tracking_enrollment table:
+dta$specimen_tracking_enrollment <- dta$specimen_tracking_enrollment %>%
+    inner_join( dta$administrative_enrollment %>%
+                select(Subject, USUBJID)) %>%
+    mutate(rave_spec_id = str_c(project, USUBJID, RecordPosition, sep="-"))
 
-    ## output which tables have no data (but are requested in config.yml) - to stderr
-    dum <- flatten(map( names(dta), function (x) if (!nrow(dta[[x]])) {dum <- if (x %in% names(config$xtbls)) cat(str_interp("Table ${x} has no data\n"),file=stderr())}))
-}
+## output which tables have no data (but are requested in config.yml) - to stderr
+dum <- flatten(map( names(dta), function (x) if (!nrow(dta[[x]])) {dum <- if (x %in% names(config$xtbls)) cat(str_interp("Table ${x} has no data\n"),file=stderr())}))
 
 if( !is.null(config$output) ) {
     for( nm in names(config$output) ) {
