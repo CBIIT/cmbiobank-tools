@@ -113,7 +113,7 @@ strategies <- list(
         ## orphans - no pub_id or pub_spec_id yet
 
         ## bootstrap an 'active' column
-        if (!("active" %in% names(entity_ids)) {
+        if (!("active" %in% names(entity_ids))) {
             entity_ids  <- entity_ids %>% mutate( active = !is.na(ctep_id) )
         }
         no_specimens  <- dta$enrollment %>% inner_join(dta$administrative_enrollment,by=c("Subject")) %>% select(Subject,USUBJID) %>% anti_join(dta$specimen_transmittal) %>% rename(USUBJID_DRV = USUBJID)
@@ -184,7 +184,7 @@ strategies <- list(
             mutate(pub_spec_id = str_c(pub_id,str_pad(str_extract(SPECID,"[0-9]+$"),2,"left","0" ),sep="-"))
         orphans_b  <- rbind(
             orphans_a %>%
-            inner_join( entity_ids %>% filter( active )
+            inner_join( entity_ids %>% filter( active ) %>%
                         select(ctep_id,up_id,pub_id,rave_spec_id, pub_spec_id) %>%
                         group_by(pub_spec_id) %>%
                         summarize(ctep_id=first(ctep_id),
@@ -262,7 +262,7 @@ strategies <- list(
             filter( rave_spec_id.old != rave_spec_id.new )
         if (length(changed_specs) > 0) {
             cat("Changed bcr subspecimen assignments:\n")
-            cat(changed_specs)
+            print(changed_specs)
             active_upd  <- entity_ids %>%
                 left_join(
                     changed_specs,
