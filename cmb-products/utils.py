@@ -1,15 +1,73 @@
 import re
 import os
 import shlex
+import shutil
+import tempfile
 import pyexcel
 import xlsxwriter
 import subprocess
+import json
 import logging
 from subprocess import run
 from datetime import datetime
 from pathlib import Path
 
 logger = logging.getLogger("cmb-products")
+
+def rave2dme(dumpdir, folder, conf, desc=None, stage_dir=None, dry_run=False):
+    """
+    :param dumpdir: RAVE dump directory
+    :param folder: DME clinical run folder name (yyyymmdd)
+    :param conf: configuration dictionary (from cmb-products.yaml)
+    :param desc: Custom description of this dump (default: None)
+    :param stage_dir: local dir for tarball creation
+    :param dry_run: if True, do not run but emit log messages (default:False)
+    """
+    DME_RAVE_path = Path(conf['paths']['DME_RAVE_path'])
+    pth = Path(dumpdir)
+    arc_pth = (Path(stage_dir) if stage_dir else Path.cwd()) / pth.name
+    tarf = shutil.make_archive(str(arc_pth), "gztar", pth.parent, pth.name)
+    dt_re = re.compile(".*(202[0-9]{5})")
+    metadata = {
+        'pull_date': dt_re.match(pth.name).group(1),
+        'description': desc or "RAVE clinical data for Cancer Moonshot Biobank (10323)",
+    }
+    dest = DME_RAVE_path / folder / Path(tarf).name
+    rc = _file2dme(Path(tarf), dest, metadata, conf, dry_run = dry_run)
+    return rc
+
+def _file2dme(file_pth, dest, metadata, conf, stage_dir=None, dry_run=False):
+    """file_pth, dest: pathlib.Path objects"""
+    DME_ENV = conf['envs']['DME_ENV']
+    DME_ENV['PATH'] = ":".join([DME_ENV['PATH'],os.environ['PATH']])
+    stage_dir = stage_dir or Path.cwd()
+    mdata = { "object_name": file_pth.name,
+              "metadataEntries": []}
+    for att in metadata:
+        md = {
+            "attribute": att,
+            "value": metadata[att],
+        }
+        if att.find("date") >=0:
+            md["dateFormat"] = "yyyyMMdd"
+        mdata["metadataEntries"].append(md)
+    mdata_fp = tempfile.NamedTemporaryFile("w+")
+    json.dump(mdata, mdata_fp)
+    mdata_fp.seek(0)
+    cmd = ["dm_register_dataobject", "-o", "dm-register-return.json", "-D", "dm-register-response.txt",
+           mdata_fp.name, str(dest), str(file_pth)]
+    logger.info("Push file {dump} to DME location {dest}".format(dump=file_pth.name,
+                                                                      dest=str(dest)))
+    if dry_run:
+        logger.info("DME push would have run with this command: {}".format(" ".join(cmd)))
+        rc = type('CompletedProcess',(object,),{"returncode":0, "args":cmd})()
+    else:
+        rc = run(cmd, capture_output=True, cwd=str(stage_dir), env=DME_ENV)
+    logger.debug("dm_register_dataoject run with args: {}".format(rc.args))
+    if rc.returncode != 0:
+        logger.error("Push to DME failed with error: '{}'".format(rc.stderr))
+    return rc
+
 
 def run_rave_reduce(strategy, optdict, dumpdir, rr,
                     outnm=None, newnm=None,  stage_dir=None, dry_run=False,
