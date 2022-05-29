@@ -1,12 +1,13 @@
-"""
-file_series
+"""file_series
 ===========
 CMB data product scripting
 
-This module contains the class FileSeries. This class stores a list 
-of duples (datetime.date, pathlib.Path) of paths in a specified 
-directory. The paths that are stored must contain a datestamp of a
-specified format in their names to be registered in the FileSeries.
+This module contains the class FileSeries. This class stores a list of
+triples (datetime.date, version(int), pathlib.Path) of paths in a
+specified directory. The paths that are stored must contain a
+datestamp of a specified format in their names to be registered in the
+FileSeries.
+
 """
 
 import datetime
@@ -103,7 +104,8 @@ class FileSeries(object):
             return None
 
     def paths_since(self, date):
-        """Returns a FileSeries, a subset of the invocant's files whose dates are strictly later than the date provided."""
+        """Returns a FileSeries, a subset of the invocant's files whose dates
+        are strictly later than the date provided."""
         paths = [x for x in self.series if x[0] > date]
         if paths:
             return FileSeries(seq=paths)
@@ -111,7 +113,8 @@ class FileSeries(object):
             return None
 
     def paths_until(self, date):
-        """Returns a FileSeries, a subset of the invocant's files whose dates are earlier than or equal to the date provided."""
+        """Returns a FileSeries, a subset of the invocant's files whose dates
+        are earlier than or equal to the date provided."""
         paths = [x for x in self.series if x[0] <= date]
         if paths:
             return FileSeries(seq=paths)
@@ -127,11 +130,11 @@ class FileSeries(object):
             return None
 
     def iter_from_latest(self):
-        """ Returns iterator that returns (date,path), latest to earliest."""
+        """ Returns iterator that returns (date,ver,path), latest to earliest."""
         return iter(self.series)
 
     def iter_from_earliest(self):
-        """ Returns iterator that returns (date,path), earliest to latest."""
+        """ Returns iterator that returns (date,ver,path), earliest to latest."""
         return iter(reversed(self.series))
 
     def pop_latest(self):

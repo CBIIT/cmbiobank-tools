@@ -11,8 +11,9 @@ import logging
 from subprocess import run
 from datetime import datetime
 from pathlib import Path
+from pdb import set_trace
 
-logger = logging.getLogger("cmb-products")
+logger = logging.getLogger("cmb-to-dme") #"cmb-products")
 
 def rave2dme(dumpdir, folder, conf, desc=None, stage_dir=None, dry_run=False):
     """
@@ -26,15 +27,65 @@ def rave2dme(dumpdir, folder, conf, desc=None, stage_dir=None, dry_run=False):
     DME_RAVE_path = Path(conf['paths']['DME_RAVE_path'])
     pth = Path(dumpdir)
     arc_pth = (Path(stage_dir) if stage_dir else Path.cwd()) / pth.name
-    tarf = shutil.make_archive(str(arc_pth), "gztar", pth.parent, pth.name)
+    logger.info("Creating tarball of '{pth}' in '{stg}'".format(pth=str(pth),stg=str(arc_pth)))
+    if not dry_run:
+        tarf = shutil.make_archive(str(arc_pth), "gztar", pth.parent, pth.name)
+    else:
+        tarf = arc_pth.with_suffix(".tar.gz")
     dt_re = re.compile(".*(202[0-9]{5})")
     metadata = {
         'pull_date': dt_re.match(pth.name).group(1),
         'description': desc or "RAVE clinical data for Cancer Moonshot Biobank (10323)",
     }
     dest = DME_RAVE_path / folder / Path(tarf).name
-    rc = _file2dme(Path(tarf), dest, metadata, conf, dry_run = dry_run)
+    logger.info("Pushing tarball '{arc}' to DME at '{dest}'".format(arc=str(tarf), dest=str(dest)))
+    if not dry_run:
+        rc = _file2dme(Path(tarf), dest, metadata, conf, dry_run=dry_run)
+    else:
+        rc = type('CompletedProcess',(object,),{"returncode":0, "args":"dry run"})()
     return rc
+
+
+def _get_dme_rave_folders(conf):
+    """Return the names of available RAVE run folders and files."""
+    DME_ENV = conf['envs']['DME_ENV']
+    DME_ENV['PATH'] = ":".join([DME_ENV['PATH'],os.environ['PATH']])
+    DME_RAVE_path = Path(conf['paths']['DME_RAVE_path'])
+    query = {
+        "detailedResponse": False,
+        "compoundQuery": {
+            "operator": "AND",
+            "queries": [
+                {
+	            "attribute":"collection_type",
+	            "value": "Clinical",
+	            "operator": "EQUAL"
+                },
+            ]
+        },
+        "totalCount": True
+    }
+    q_tfp = tempfile.NamedTemporaryFile("w+")
+    json.dump(query, q_tfp)
+    q_tfp.seek(0)
+    cmd = ["dm_query_dataobject", q_tfp.name, DME_RAVE_path]
+    rc = run(cmd, capture_output=True, env=DME_ENV)
+    if rc.returncode != 0:
+        logger.error("DME query for folders failed: {}".format(rc.stderr))
+        return None
+    out = json.loads(rc.stdout)
+    assert out['totalCount'] < out['limit']  # otherwise, need to update with pagination
+    folders = {}
+    for p in out['dataObjectPaths']:
+        p = Path(p)
+        folder = re.match(".*RAVE/([0-9]+)/", str(p)).group(1)
+        if folder in folders:
+            folders[folder].append(p.name)
+        else:
+            folders[folder] = [p.name]
+    return folders
+
+    
 
 def _file2dme(file_pth, dest, metadata, conf, stage_dir=None, dry_run=False):
     """file_pth, dest: pathlib.Path objects"""
@@ -55,7 +106,7 @@ def _file2dme(file_pth, dest, metadata, conf, stage_dir=None, dry_run=False):
     json.dump(mdata, mdata_fp)
     mdata_fp.seek(0)
     cmd = ["dm_register_dataobject", "-o", "dm-register-return.json", "-D", "dm-register-response.txt",
-           mdata_fp.name, str(dest), str(file_pth)]
+           mdata_fp.name, shlex.quote(str(dest)), shlex.quote(str(file_pth))]
     logger.info("Push file {dump} to DME location {dest}".format(dump=file_pth.name,
                                                                       dest=str(dest)))
     if dry_run:
@@ -63,7 +114,7 @@ def _file2dme(file_pth, dest, metadata, conf, stage_dir=None, dry_run=False):
         rc = type('CompletedProcess',(object,),{"returncode":0, "args":cmd})()
     else:
         rc = run(cmd, capture_output=True, cwd=str(stage_dir), env=DME_ENV)
-    logger.debug("dm_register_dataoject run with args: {}".format(rc.args))
+    logger.debug("dm_register_dataobject run with args: {}".format(rc.args))
     if rc.returncode != 0:
         logger.error("Push to DME failed with error: '{}'".format(rc.stderr))
     return rc
