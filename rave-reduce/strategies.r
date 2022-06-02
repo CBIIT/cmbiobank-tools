@@ -263,6 +263,10 @@ strategies <- list(
         if (length(changed_specs) > 0) {
             cat("Changed bcr subspecimen assignments:\n")
             print(changed_specs)
+            ## following creates a new active column, setting
+            ## active to False for any records that have
+            ## match an old subspec id in the "changed_specs"
+            ## tibble:
             active_upd  <- entity_ids %>%
                 left_join(
                     changed_specs,

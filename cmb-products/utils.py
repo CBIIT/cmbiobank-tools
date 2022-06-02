@@ -50,6 +50,13 @@ def tsv2xlsx(tsv_path):
     col_max_width=[]
     # headers
     hdrs = tsv.array[0]
+    # filter out inactive records and remove the 'active' flag column
+    if 'active' in hdrs:
+        inactive = [ i for i in range(0, len(tsv))
+                     if tsv.row_at(i)[hdrs.index('active')] == 'FALSE' ]
+        tsv.filter(row_indices=inactive)
+        tsv.filter(column_indices=[hdrs.index('active')])
+    hdrs = tsv.array[0]  # update hdrs
     ws.set_row(0,None,bold)
     ws.write_row(0,0,hdrs)
     col_max_width = [len(x) for x in hdrs]
@@ -68,6 +75,7 @@ def tsv2xlsx(tsv_path):
                     ws.write_blank(row,col,None)
                 else:
                     ws.write(row,col,item)
+    
     ws.autofilter(0,0,len(tsv.array)-1,len(tsv.array[0])-1)
     if "ctep_id" in hdrs:
         ws.filter_column(hdrs.index("ctep_id"), 'x != NA')
