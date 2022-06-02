@@ -111,14 +111,20 @@ strategies <- list(
         ## patients can be enrolled but without specimen transmittal - 
         ## need to look at enrollment table too
         ## orphans - no pub_id or pub_spec_id yet
+
+        ## bootstrap an 'active' column
+        if (!("active" %in% names(entity_ids))) {
+            entity_ids  <- entity_ids %>% mutate( active = !is.na(ctep_id) )
+        }
         no_specimens  <- dta$enrollment %>% inner_join(dta$administrative_enrollment,by=c("Subject")) %>% select(Subject,USUBJID) %>% anti_join(dta$specimen_transmittal) %>% rename(USUBJID_DRV = USUBJID)
         ## pull orphans from specimen_transmittal form
         orphans <- dta$specimen_transmittal %>%
             select(Subject,SPECID,BSREFID,USUBJID_DRV) %>% unique %>%
-            anti_join(entity_ids, by = c("Subject"="ctep_id",
-                                  "SPECID"="rave_spec_id",
-                                  "BSREFID"="bcr_subspec_id",
-                                  "USUBJID_DRV"="up_id"))
+            anti_join(entity_ids %>% filter( active ),
+                      by = c("Subject"="ctep_id",
+                             "SPECID"="rave_spec_id",
+                             "BSREFID"="bcr_subspec_id",
+                             "USUBJID_DRV"="up_id"))
 
         ## pull more orphans from receiving_status form
         orphans <- orphans %>%
@@ -128,10 +134,11 @@ strategies <- list(
                 filter( !is.na(SUBSPCM) ) %>%
                 inner_join(dta$administrative_enrollment, by=c("Subject")) %>%
                 select(Subject,SPECID2_DRV,SUBSPCM,USUBJID) %>% unique %>%
-                anti_join(entity_ids, by = c("Subject" = "ctep_id",
-                                      "SPECID2_DRV"="rave_spec_id",
-                                      "SUBSPCM"="bcr_subspec_id",
-                                      "USUBJID"="up_id")),
+                anti_join(entity_ids %>% filter( active ),
+                          by = c("Subject" = "ctep_id",
+                                 "SPECID2_DRV"="rave_spec_id",
+                                 "SUBSPCM"="bcr_subspec_id",
+                                 "USUBJID"="up_id")),
                 by = c("Subject" = "Subject",
                        "SPECID" = "SPECID2_DRV",
                        "BSREFID" = "SUBSPCM",
@@ -140,9 +147,10 @@ strategies <- list(
         ## add those new participants without specimens yet
         orphans <- orphans %>% full_join(no_specimens)
         ## newbies - new patients without pub_id
-        newbies  <- orphans %>% anti_join(entity_ids,
-                                          by=c("Subject"="ctep_id",
-                                               "USUBJID_DRV"="up_id"))
+        newbies  <- orphans %>%
+            anti_join(entity_ids %>% filter( active ),
+                      by=c("Subject"="ctep_id",
+                           "USUBJID_DRV"="up_id"))
         ## unused - public ids that are not yet assigned
         unused  <- entity_ids %>% filter( is.na(ctep_id) ) %>% select(pub_id)
         ## assign unused pub_ids to newbies
@@ -159,7 +167,7 @@ strategies <- list(
         ## set the newbies' pub_ids in orphans (adding pub_id column to orphans)
         orphans_a <- bind_rows(
             orphans %>%
-            inner_join(entity_ids %>%
+            inner_join(entity_ids %>% filter( active ) %>%
                        select(ctep_id,up_id,pub_id) %>%
                        group_by(ctep_id,up_id) %>%
                        summarize(pub_id = first(pub_id)),
@@ -168,7 +176,7 @@ strategies <- list(
             orphans %>% inner_join(assgn,by = c("Subject","USUBJID_DRV")))
         ## now handle specimen assignment
         assgn_b <- orphans_a %>%
-            anti_join( entity_ids,
+            anti_join( entity_ids %>% filter( active ),
                       by=c("pub_id",
                            "Subject"="ctep_id",
                            "USUBJID_DRV"="up_id",
@@ -176,7 +184,7 @@ strategies <- list(
             mutate(pub_spec_id = str_c(pub_id,str_pad(str_extract(SPECID,"[0-9]+$"),2,"left","0" ),sep="-"))
         orphans_b  <- rbind(
             orphans_a %>%
-            inner_join( entity_ids %>%
+            inner_join( entity_ids %>% filter( active ) %>%
                         select(ctep_id,up_id,pub_id,rave_spec_id, pub_spec_id) %>%
                         group_by(pub_spec_id) %>%
                         summarize(ctep_id=first(ctep_id),
@@ -190,7 +198,7 @@ strategies <- list(
             orphans_a %>%
             inner_join(assgn_b))
         ## now handle subspecimen assignment
-        nxt  <- entity_ids %>%
+        nxt  <- entity_ids %>% filter( active ) %>%
             select(pub_spec_id,pub_subspec_id) %>%
             group_by(pub_spec_id) %>%
             mutate( ssid =  as.integer(str_extract(pub_subspec_id,"[0-9]+$"))+1) %>%
@@ -214,7 +222,7 @@ strategies <- list(
             function (x,y) if (is.na(y)) { NA } else { next_ssid_for(x) })
         orphans_ss  <- orphans_b %>% 
             add_column( pub_subspec_id = ss_col ) %>%
-            mutate( pull_date = pull_date )
+            mutate( pull_date = pull_date, active = TRUE )
         entity_ids_upd  <<- orphans_ss %>% 
             full_join(entity_ids, by=c("Subject"="ctep_id",
                                        "USUBJID_DRV"="up_id",
@@ -222,9 +230,10 @@ strategies <- list(
                                        "BSREFID"="bcr_subspec_id",
                                        "pub_id","pub_spec_id")) %>%
             mutate( pub_subspec_id = coalesce(pub_subspec_id.x,pub_subspec_id.y)) %>%
-            ##mutate( pull_date = coalesce(pull_date.x,pull_date.y)) %>%
             mutate( pull_date = if_else(!is.na(pull_date.y),pull_date.y,pull_date.x)) %>%
-            select( -pub_subspec_id.x,-pub_subspec_id.y, -pull_date.x,-pull_date.y) %>%
+            mutate( active = coalesce(active.x, active.y) ) %>%
+            select( -pub_subspec_id.x,-pub_subspec_id.y, -pull_date.x,-pull_date.y,
+                   -active.x, -active.y) %>%
             rename( ctep_id = Subject, up_id = USUBJID_DRV, rave_spec_id = SPECID, bcr_subspec_id = BSREFID)
         if (!is.null(bcr_report)) {
             cat("updating bcr-only subspecimens\n",file=stderr())
@@ -242,13 +251,40 @@ strategies <- list(
     },
     entity_ids_upd = function (pull_date) entity_ids_upd,
     update_bcr_ids = function (pulldate) {
-        orphans_bcr  <- bcr_report %>% anti_join(entity_ids, by = c("BSI ID" = "bcr_subspec_id")) %>%
+        ## check for changes
+        changed_specs  <- bcr_report %>%
+            rename( c("rave_spec_id"="Original Id","bcr_subspec_id" = "BSI ID") ) %>%
+            inner_join(entity_ids %>% filter( active ),
+                       by = c("bcr_subspec_id")) %>%
+            select( bcr_subspec_id, rave_spec_id.x, rave_spec_id.y) %>%
+            rename( rave_spec_id.old = rave_spec_id.x,
+                      rave_spec_id.new = rave_spec_id.y) %>%
+            filter( rave_spec_id.old != rave_spec_id.new )
+        if (length(changed_specs) > 0) {
+            cat("Changed bcr subspecimen assignments:\n")
+            print(changed_specs)
+            ## following creates a new active column, setting
+            ## active to False for any records that have
+            ## match an old subspec id in the "changed_specs"
+            ## tibble:
+            active_upd  <- entity_ids %>%
+                left_join(
+                    changed_specs,
+                    by = c( "bcr_subspec_id" = "bcr_subspec_id",
+                           "rave_spec_id" = "rave_spec_id.old")) %>%
+                select(rave_spec_id.new, active) %>%
+                transmute( active = is.na(rave_spec_id.new)&active )
+            entity_ids <- entity_ids %>% select(-active) %>% bind_cols(active_upd)
+        }
+
+        orphans_bcr  <- bcr_report %>%
+            anti_join(entity_ids %>% filter( active ), by = c("BSI ID" = "bcr_subspec_id")) %>%
             rename( c("rave_spec_id"="Original Id","bcr_subspec_id" = "BSI ID") ) %>%
             transmute( rave_spec_id = str_to_upper(rave_spec_id), bcr_subspec_id) %>% 
             inner_join( entity_ids %>% select(ctep_id, up_id, rave_spec_id,pub_id, pub_spec_id) %>% unique ) %>%
             arrange(pub_spec_id, bcr_subspec_id) 
 
-        nxt  <- entity_ids %>%
+        nxt  <- entity_ids %>% filter( active ) %>%
             select(pub_spec_id,pub_subspec_id) %>%
             group_by(pub_spec_id) %>% 
             mutate( ssid =  as.integer(str_extract(pub_subspec_id,"[0-9]+$"))+1) %>%
@@ -270,7 +306,7 @@ strategies <- list(
             function (x,y) if (is.na(y)) { NA } else { next_ssid_for(x) })
         orphans_bcr  <-  orphans_bcr %>%
             add_column(pub_subspec_id = ss_col) %>%
-            mutate(pull_date = pulldate)
+            mutate(pull_date = pulldate, active = TRUE)
         entity_ids_upd  <<- bind_rows(entity_ids,orphans_bcr) %>% arrange(pub_subspec_id)
     },
     slide_table = function (pull_date) {
