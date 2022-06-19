@@ -141,16 +141,16 @@ for m in manifests:
     logger.info("Pushing manifest for folder '{}'".format(m))
     for d in manifests[m]['dumps']:
         d = locs['rave_dump_source'] / d
-        utils.rave2dme(str(d), m, conf, stage_dir=stage_dir, dry_run=dry_run)
-        if not dry_run:
+        utils.rave2dme(str(d), m, conf, stage_dir=stage_dir, dry_run=args.dry_run)
+        if not args.dry_run:
             time.sleep(1)
     for d in manifests[m]['inventories']:
         d = locs['vari_inventory_source'] / d
         stg = stage_dir / re.sub(" ","_",d.name)  # replace spaces in filename for DME
-        utils.cpy(d,stg,dry_run)
+        utils.cpy(d,stg,args.dry_run)
         dest = locs['DME_RAVE_path'] / m / stg.name
         utils._file2dme(Path(stg.name), dest, {"description": "Van Andel sample inventory spreadsheet"},
-                        conf, stage_dir=stage_dir, dry_run=dry_run)
-        if not dry_run:
+                        conf, stage_dir=stage_dir, dry_run=args.dry_run)
+        if not args.dry_run:
             time.sleep(1)  # give endpt a break
 pass
