@@ -348,6 +348,7 @@ strategies <- list(
     tcia_metadata = function(pull_date) {
         need_files()
         need_bcr_report()
+        need_bcr_slides()
         tc_rngs <- c("NO VIABLE TUMOR PRESENT"="0 - 9%",
                   "10% AND 19%" = "10% - 19%",
                   "20% AND 49%" = "20% - 49%",
@@ -362,15 +363,17 @@ strategies <- list(
             mutate( RACE = str_c(str_replace_na(RACE_01_STD,""),str_replace_na(RACE_02_STD,""),str_replace_na(RACE_03_STD,""),str_replace_na(RACE_04_STD,""),str_replace_na(RACE_05_STD,""),str_replace_na(RACE_06_STD,""),str_replace_na(RACE_07_STD,"")) ) %>%
             mutate( DATE_OF_ENROLLMENT = dmy_hms(DSSTDAT_ENROLLMENT) ) %>%
             select( -matches("RACE_.*") ) %>%
-            select( -DSSTDAT_ENROLLMENT )
+            select( -DSSTDAT_ENROLLMENT ) %>%
+            unique
 
         spec_info <- dta$biopsy_pathology_verification_and_assessment %>%
             select(MIREFID,BSREFID_DRV,SPLADQFL_X1_STD,
                    MIORRES_TUCONT_X1_STD,MIORRES_TUCONT_X2_STD,
-                   MHTERM_DIAGNOSIS) %>%
+                   MHTERM_DIAGNOSIS) %>% unique  %>%
             inner_join(dta$specimen_tracking_enrollment %>%
                        select(rave_spec_id,ASMTTPT_STD),
-                       by = c("MIREFID" = "rave_spec_id"))
+                       by = c("MIREFID" = "rave_spec_id")) %>%
+            unique
 
         slides <-  bcr_report %>%
             rename( "material_type" = "Material Type") %>%
@@ -413,8 +416,14 @@ strategies <- list(
                 ) %>%
             left_join(med_to_tcia,
                       by = c("Topographic_Site" = "MedDRA Term")) %>%
-            rename( "TCIA_Collection" = "TCIA Collection")
-        datascope
+            rename( "TCIA_Collection" = "TCIA Collection") %>%
+            unique
+        ## add the filenames available from VARI - use the slide_table function
+        slide_tbl <- strategies$slide_table(pull_date)
+        datascope %>%
+            left_join( slide_tbl %>%
+                       select(pub_subspec_id, filename) ) %>%
+            rename( "Filename" = "filename" )
     }
 )
 

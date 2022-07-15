@@ -309,6 +309,7 @@ uams_audit = (stage_dir / Path(newnm)).with_suffix(".audit")
 logger.info("Create tcia metadata table with date {}".format(id_rds_date))
 optdict = { '--ids-file':id_rds.resolve(),
             '--bcr-file':vari_inventory.latest_path.resolve(),
+            '--bcr-slide-file-dir':locs['vari_slide_data_source'],
             '-d':id_rds_date.strftime("%d %b %Y")}
 outnm = [x for x in rr_conf["tcia_metadata"]["output"]][0]
 newnm = outnm.replace("tsv",".".join([id_rds_date.strftime("%Y%m%d"),"tsv"]))
