@@ -421,8 +421,9 @@ strategies <- list(
         ## add the filenames available from VARI - use the slide_table function
         slide_tbl <- strategies$slide_table(pull_date)
         datascope %>%
-            left_join( slide_tbl %>%
+            inner_join( slide_tbl %>%
                        select(pub_subspec_id, filename) ) %>%
+            filter( !is.na(filename) ) %>%
             rename( "Filename" = "filename" )
     }
 )
