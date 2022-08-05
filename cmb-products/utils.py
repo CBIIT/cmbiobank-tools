@@ -13,7 +13,7 @@ from datetime import datetime
 from pathlib import Path
 from pdb import set_trace
 
-logger = logging.getLogger("cmb-to-dme") #"cmb-products")
+logger = logging.getLogger("cmb-products")
 
 def rave2dme(dumpdir, folder, conf, desc=None, stage_dir=None, dry_run=False):
     """
@@ -132,11 +132,10 @@ def run_rave_reduce(strategy, optdict, dumpdir, rr,
     cmd = [rr, "-s", strategy] + opts + [str(dumpdir)]
     logger.debug("cmd: {}".format(" ".join(cmd)))
     if not dry_run:
-        rc = run(cmd, capture_output=True, cwd=stage_dir)
         try:
-            rc.check_returncode()
+            run(cmd, capture_output=True, cwd=stage_dir, check=True)
         except subprocess.CalledProcessError as e:
-            logger.error("On run: {}\nstderr: {}\nstdout {}".format(
+            logger.error("On run: {}\nR stderr:\n {}\nR stdout:\n {}".format(
                 " ".join(cmd), e.stderr, e.stdout))
             raise e
         logger.debug("Rename rave-reduce output from {} to {}".format(outnm, newnm))

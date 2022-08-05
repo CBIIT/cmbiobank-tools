@@ -370,9 +370,11 @@ strategies <- list(
             select(MIREFID,BSREFID_DRV,SPLADQFL_X1_STD,
                    MIORRES_TUCONT_X1_STD,MIORRES_TUCONT_X2_STD,
                    MHTERM_DIAGNOSIS) %>% unique  %>%
+            separate(BSREFID_DRV, into=c("bsi_pfx","bsi_suf"), remove=F) %>%
             inner_join(dta$specimen_tracking_enrollment %>%
                        select(rave_spec_id,ASMTTPT_STD),
                        by = c("MIREFID" = "rave_spec_id")) %>%
+            filter(bsi_suf == "0000") %>%
             unique
 
         slides <-  bcr_report %>%
@@ -383,11 +385,13 @@ strategies <- list(
                    vari_cellularity = "QC Tumor Cellularity (Moonshot)",
                    date_of_collection = "Collection Date/Time") %>%
             inner_join(entity_ids,
-                       by = c("BSI ID"="bcr_subspec_id","Subject ID"="ctep_id"))
+                       by = c("BSI ID"="bcr_subspec_id","Subject ID"="ctep_id")) %>%
+            separate(`BSI ID`, into=c("bsi_pfx","bsi_suf"), remove=F) %>%
+            select(-bsi_suf)
 
         datascope <- slides %>%
             inner_join(pt_info, by=c("Subject ID"="Subject")) %>%
-            inner_join(spec_info, by = c("rave_spec_id" = "MIREFID")) %>%
+            inner_join(spec_info, by = c("rave_spec_id" = "MIREFID", "bsi_pfx")) %>%
             unique %>%
             mutate(
                 Percent_Tumor_Nuc = getrng(MIORRES_TUCONT_X1_STD),
