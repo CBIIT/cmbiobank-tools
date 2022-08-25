@@ -1,4 +1,4 @@
-#!/usr/bin/env -S Rscript --slave
+#!/usr/bin/env -S Rscript --no-init-file --slave
 suppressPackageStartupMessages(library(tidyverse))
 suppressPackageStartupMessages(library(stringr))
 suppressPackageStartupMessages(library(lubridate))
@@ -165,18 +165,24 @@ if( !is.null(config$output) ) {
     for( nm in names(config$output) ) {
         fnm  <- nm
         sg <- config$output[[nm]]
+        ## check for errors
+
+        outp  <- try(strategies[[sg$strategy]](pull_date))
+        if (!is.null(attr(outp,"condition"))) {
+            cat(outp)
+            q(save="no",status=1)
+        }
         if (fnm == "stdout") {
-            print.data.frame(strategies[[sg$strategy]](pull_date), quote=TRUE,row.names=FALSE)
+            print.data.frame(outp, quote=TRUE,row.names=FALSE)
         } else {
             fnm_split  <- strsplit(fnm,"\\.")[[1]]
             if (file.exists(fnm)) {
                 fnm  <- str_c( append(fnm_split, as.double(now()),length(fnm_split)-1),collapse=".")
             }
             if (last(fnm_split) == "rds") {
-                saveRDS(strategies[[sg$strategy]](pull_date), fnm)
+                saveRDS(outp, fnm)
             } else {
-                write_delim(strategies[[sg$strategy]](pull_date),fnm,
-                            delim=sg$delim)
+                write_delim(outp, fnm, delim=sg$delim)
             }
         }
     }
