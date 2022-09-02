@@ -63,20 +63,28 @@ def _get_dme_rave_folders(conf):
                 },
             ]
         },
-        "totalCount": True
+        "page": 1,
+        "totalCount": True,
     }
-    q_tfp = tempfile.NamedTemporaryFile("w+")
-    json.dump(query, q_tfp)
-    q_tfp.seek(0)
-    cmd = ["dm_query_dataobject", q_tfp.name, DME_RAVE_path]
-    rc = run(cmd, capture_output=True, env=DME_ENV)
-    if rc.returncode != 0:
-        logger.error("DME query for folders failed: {}".format(rc.stderr))
-        return None
-    out = json.loads(rc.stdout)
-    assert out['totalCount'] < out['limit']  # otherwise, need to update with pagination
+    obj_paths = []
+    done = False
+    while not done:
+        q_tfp = tempfile.NamedTemporaryFile("w+")
+        json.dump(query, q_tfp)
+        q_tfp.seek(0)
+        cmd = ["dm_query_dataobject", q_tfp.name, DME_RAVE_path]
+        rc = run(cmd, capture_output=True, env=DME_ENV)
+        if rc.returncode != 0:
+            logger.error("DME query for folders failed: {}".format(rc.stderr))
+            return None
+        out = json.loads(rc.stdout)
+        obj_paths.extend(out['dataObjectPaths'])
+        if out['totalCount'] <= len(obj_paths):
+            done = True
+        else:
+            query["page"] += 1 
     folders = {}
-    for p in out['dataObjectPaths']:
+    for p in obj_paths:
         p = Path(p)
         folder = re.match(".*RAVE/([0-9]+)/", str(p)).group(1)
         if folder in folders:
