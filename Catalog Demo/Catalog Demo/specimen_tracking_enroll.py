@@ -29,15 +29,20 @@ def specimen_tracking():
                     siteid = col
                 elif i[col] == "Site":
                     Site = col
+                elif i[col] == "RecordActive":
+                    RecordActive = col
                 elif i[col] == "project":
                     proj = col
                 else:
                     if i[col] == "SiteNumber":
                         SiteNum = col
         else:
-            search = i[proj] + "_" + i[subId] + "_" + i[sub] + "_" + i[siteid] + "_" + i[Site] + "_" + i[SiteNum]
-            k=[search,i[asmttpt],i[tistyp],i[specid_drv]]
-            specimen_tracking_enroll.append(k)
+            if i[RecordActive]=="0":
+                continue
+            else:
+                search = i[proj] + "_" + i[subId] + "_" + i[sub] + "_" + i[siteid] + "_" + i[Site] + "_" + i[SiteNum]
+                k=[search,i[asmttpt],i[tistyp],i[specid_drv]]
+                specimen_tracking_enroll.append(k)
 
     for value, val in catalog.items():
         for doc in specimen_tracking_enroll:
