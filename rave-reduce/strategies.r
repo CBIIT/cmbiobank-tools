@@ -242,8 +242,8 @@ strategies <- list(
             cat("bcr report not provided\n")
         }
         # throw if there are duplicate subspec ids
-        if ( length((entity_ids_upd %>% filter(!is.na(pub_subspec_id)))$pub_subspec_id) !=
-             length((entity_ids_upd %>% filter(!is.na(pub_subspec_id)))$pub_subspec_id %>% unique) ) {
+        if ( length((entity_ids_upd %>% filter(active) %>% filter(!is.na(pub_subspec_id)))$pub_subspec_id) !=
+             length((entity_ids_upd %>% filter(active)  %>% filter(!is.na(pub_subspec_id)))$pub_subspec_id %>% unique) ) {
             cat("error: public subspecimen ids are not unique\n")
             q(save="no",status=1)
         }
@@ -260,9 +260,9 @@ strategies <- list(
             rename( rave_spec_id.old = rave_spec_id.x,
                       rave_spec_id.new = rave_spec_id.y) %>%
             filter( rave_spec_id.old != rave_spec_id.new )
-        if (length(changed_specs) > 0) {
+        if (nrow(changed_specs)) {
             cat("Changed bcr subspecimen assignments:\n")
-            print(changed_specs)
+            print(changed_specs %>% print(n=Inf))
             ## following creates a new active column, setting
             ## active to False for any records that have
             ## match an old subspec id in the "changed_specs"
