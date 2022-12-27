@@ -313,7 +313,7 @@ strategies <- list(
         need_files()
         need_bcr_report()
         need_bcr_slides()
-       slide_mapping  <- entity_ids %>% filter( !is.na(pub_subspec_id) ) %>%
+       slide_mapping  <- entity_ids %>% dplyr::filter( !is.na(pub_subspec_id) ) %>%
            inner_join(bcr_report, by = c("bcr_subspec_id" = "BSI ID")) %>%
            inner_join(
                dta$enrollment %>% select( Subject, CTEP_SDC_MED_V10_CD ) %>%
@@ -327,7 +327,7 @@ strategies <- list(
                   rave_spec_id, pub_subspec_id, bcr_subspec_id,
                   material_type, anatomic_site, clinical_diagnosis,
                   pull_date) %>%
-           filter( grepl("Slide",material_type) ) %>%
+           dplyr::filter( grepl("Slide",material_type) ) %>%
            select(-material_type)
         slide_mapping  <- slide_mapping %>%
            left_join(dta$specimen_transmittal %>% select(SPECID,TISTYP),
@@ -374,9 +374,9 @@ strategies <- list(
             inner_join(dta$specimen_tracking_enrollment %>%
                        select(rave_spec_id,ASMTTPT_STD),
                        by = c("MIREFID" = "rave_spec_id")) %>%
-            filter(bsi_suf == "0000") %>%
+            dplyr::filter(bsi_suf == "0000") %>%
             unique
-
+        
         slides <-  bcr_report %>%
             rename( "material_type" = "Material Type") %>%
             filter(grepl("Slide",material_type)) %>%
@@ -384,7 +384,7 @@ strategies <- list(
                    vari_necrosis = "QC % Necrosis (Moonshot)",
                    vari_cellularity = "QC Tumor Cellularity (Moonshot)",
                    date_of_collection = "Collection Date/Time") %>%
-            inner_join(entity_ids,
+            inner_join(entity_ids %>% filter(active),
                        by = c("BSI ID"="bcr_subspec_id","Subject ID"="ctep_id")) %>%
             separate(`BSI ID`, into=c("bsi_pfx","bsi_suf"), remove=F) %>%
             select(-bsi_suf)
@@ -424,11 +424,29 @@ strategies <- list(
             unique
         ## add the filenames available from VARI - use the slide_table function
         slide_tbl <- strategies$slide_table(pull_date)
-        datascope %>%
+        ret  <- datascope %>%
             inner_join( slide_tbl %>%
                        select(pub_subspec_id, filename) ) %>%
             filter( !is.na(filename) ) %>%
             rename( "Filename" = "filename" )
+        ## remove extra records associated with subspecimens - choose the rec with
+        ## the fewest NA entries
+        ## identify the subspecs with extra records:
+        ret_dup  <- ret %>% group_by(pub_subspec_id) %>% mutate(ct = n()) %>%
+            dplyr::filter(ct > 1)
+        if (nrow(ret_dup)) {
+            ret_sing  <- ret %>% group_by(pub_subspec_id) %>% mutate(ct = n()) %>%
+                dplyr::filter(ct == 1) %>% select( -ct )
+            ## now, count the number of NAs among a set of vars that have caused issues
+            ## and remove the rows (within each subspec group) that have the most NAs
+            ret_dedup <- ret_dup %>% rowwise() %>%
+                mutate( nas = sum(is.na(c(Tumor_Segment_Acceptable,Percent_Tumor_Nuclei,Is_Enriched)))) %>%
+                ungroup() %>% group_by(pub_subspec_id) %>%
+                dplyr::filter( nas == min(nas)) %>%
+                select( -ct, -nas)
+            ret  <- bind_rows(ret_sing, ret_dedup)
+        }
+        ret
     }
 )
 
