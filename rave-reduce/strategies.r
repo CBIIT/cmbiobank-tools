@@ -19,6 +19,32 @@ need_bcr_slides <- function(){
     }
 }
 
+dedup_by_fewest_nas  <- function (x, col_want_unique, cols_of_x, tiebreaker) {
+    ## remove extra records associated with subspecimens - choose the rec with
+    ## the fewest NA entries
+    ## if there are more than one such rec, choose the one with the maximum
+    ## value of the tiebreaker column (RecordPosition)
+    ret <- NULL
+    unc  <- enexpr(col_want_unique)
+    nac  <- enexpr(cols_of_x)
+    tbk  <- enexpr(tiebreaker)
+    x_dup  <- x %>% group_by() %>% mutate(ct = n()) %>%
+        dplyr::filter(ct > 1)
+    if (nrow(x_dup)) {
+        x_sing  <- x %>% group_by(!!unc) %>% mutate(ct = n()) %>%
+            dplyr::filter(ct == 1) %>% ungroup %>% select( -ct )
+        ## now, count the number of NAs among a set of vars that have caused issues
+        ## and remove the rows (within each subspec group) that have the most NAs
+        x_dedup <- x_dup %>% rowwise() %>%
+            mutate( nas = sum(is.na(!!nac)) ) %>%
+            ungroup() %>% group_by(!!unc) %>%
+            dplyr::filter( nas == min(nas)) %>% 
+            dplyr::filter( !!tbk == max(!!tbk) ) %>% ungroup %>%
+            select( -ct, -nas) 
+        ret  <- bind_rows(x_sing, x_dedup)
+    }
+    ret %>% unique
+}
 
 
 strategies <- list(
@@ -346,57 +372,69 @@ strategies <- list(
         slide_mapping
     },
     tcia_metadata = function(pull_date) {
-        need_files()
-        need_bcr_report()
-        need_bcr_slides()
+        ## what we're doing here:
+        ## we have the information for the slide subspecimens in 'slides'
+        ## now we just want to add *specimen* metadata across the subspecimens in slides
+        ##  (spec_info, below)
+        ## and the participant metadata across the specimens (pt_info, below)
+        ## to produce the table needed by tcia
+        
         tc_rngs <- c("NO VIABLE TUMOR PRESENT"="0 - 9%",
-                  "10% AND 19%" = "10% - 19%",
-                  "20% AND 49%" = "20% - 49%",
-                  "50% AND 69%" = "50% - 69%",
-                  "70%" = ">=70%"
-                  )
+                     "10% AND 19%" = "10% - 19%",
+                     "20% AND 49%" = "20% - 49%",
+                     "50% AND 69%" = "50% - 69%",
+                     "70%" = ">=70%"
+                     )
         getrng <- function (z) map_chr(z, function (y) if (!is.na(y)) tc_rngs[map_lgl( names(tc_rngs), function (x) grepl(x,y))] else NA)
         pt_info <- dta$enrollment %>%
             select( Subject, matches("RACE_.*_STD"),ETHNIC_STD,
                    CTEP_SDC_MED_V10_CD, MHLOC_STD, AGE,
                    SEX_STD, GENDER_STD, DSSTDAT_ENROLLMENT ) %>%
-            mutate( RACE = str_c(str_replace_na(RACE_01_STD,""),str_replace_na(RACE_02_STD,""),str_replace_na(RACE_03_STD,""),str_replace_na(RACE_04_STD,""),str_replace_na(RACE_05_STD,""),str_replace_na(RACE_06_STD,""),str_replace_na(RACE_07_STD,"")) ) %>%
+            mutate( RACE = str_c(str_replace_na(RACE_01_STD,""),
+                                 str_replace_na(RACE_02_STD,""),
+                                 str_replace_na(RACE_03_STD,""),
+                                 str_replace_na(RACE_04_STD,""),
+                                 str_replace_na(RACE_05_STD,""),
+                                 str_replace_na(RACE_06_STD,""),
+                                 str_replace_na(RACE_07_STD,"")) ) %>%
             mutate( DATE_OF_ENROLLMENT = dmy_hms(DSSTDAT_ENROLLMENT) ) %>%
             select( -matches("RACE_.*") ) %>%
             select( -DSSTDAT_ENROLLMENT ) %>%
             unique
 
         spec_info <- dta$biopsy_pathology_verification_and_assessment %>%
-            select(MIREFID,BSREFID_DRV,SPLADQFL_X1_STD,
+            dplyr::filter(RecordActive == 1) %>%
+            select(MIREFID,
+                   SPLADQFL_X1_STD,
                    MIORRES_TUCONT_X1_STD,MIORRES_TUCONT_X2_STD,
-                   MHTERM_DIAGNOSIS) %>% unique  %>%
-            separate(BSREFID_DRV, into=c("bsi_pfx","bsi_suf"), remove=F) %>%
+                   MHTERM_DIAGNOSIS,
+                   RecordPosition) %>% unique %>%
             inner_join(dta$specimen_tracking_enrollment %>%
                        select(rave_spec_id,ASMTTPT_STD),
                        by = c("MIREFID" = "rave_spec_id")) %>%
-            dplyr::filter(bsi_suf == "0000") %>%
             unique
         
         slides <-  bcr_report %>%
             rename( "material_type" = "Material Type") %>%
-            filter(grepl("Slide",material_type)) %>%
+            dplyr::filter(grepl("Slide",material_type)) %>%
             select("Subject ID","BSI ID",
                    vari_necrosis = "QC % Necrosis (Moonshot)",
                    vari_cellularity = "QC Tumor Cellularity (Moonshot)",
                    date_of_collection = "Collection Date/Time") %>%
-            inner_join(entity_ids %>% filter(active),
+            inner_join(entity_ids %>% dplyr::filter(active),
                        by = c("BSI ID"="bcr_subspec_id","Subject ID"="ctep_id")) %>%
-            separate(`BSI ID`, into=c("bsi_pfx","bsi_suf"), remove=F) %>%
-            select(-bsi_suf)
-
+                                        #separate(`BSI ID`, into=c("bsi_pfx","bsi_suf"), remove=F) %>%
+                                        #select(-bsi_suf)
+            unique
+        
         datascope <- slides %>%
             inner_join(pt_info, by=c("Subject ID"="Subject")) %>%
-            inner_join(spec_info, by = c("rave_spec_id" = "MIREFID", "bsi_pfx")) %>%
+            left_join(spec_info, by = c("rave_spec_id" = "MIREFID")) %>%
             unique %>%
             mutate(
                 Percent_Tumor_Nuc = getrng(MIORRES_TUCONT_X1_STD),
                 Percent_Tumor_Nuc_Enriched = getrng(MIORRES_TUCONT_X2_STD),
-            ) %>%
+                ) %>%
             mutate(
                 Percent_Tumor_Nuclei = dplyr::coalesce(Percent_Tumor_Nuc_Enriched, Percent_Tumor_Nuc),
                 Is_Enriched = map2_chr(is.na(Percent_Tumor_Nuc),is.na(Percent_Tumor_Nuc_Enriched),function(x,y) if (x) { NA } else if (y) {"N"} else {"Y"})
@@ -404,7 +442,7 @@ strategies <- list(
             mutate(
                 Days_From_Enrollment = round((date_of_collection - DATE_OF_ENROLLMENT)/86400)
             ) %>%
-            select( pub_id, pub_subspec_id,
+            select( pub_id, pub_subspec_id, bcr_subspec_id = `BSI ID`,
                    Timepoint = ASMTTPT_STD,
                    Topographic_Site = CTEP_SDC_MED_V10_CD,
                    Tumor_Histologic_Type = MHTERM_DIAGNOSIS,
@@ -414,10 +452,11 @@ strategies <- list(
                    Is_Enriched,
                    Days_From_Enrollment,
                    Gender = SEX_STD, Age = AGE, Ethnicity = ETHNIC_STD,
-                   Race = RACE) %>%
+                   Race = RACE,
+                   RecordPosition) %>%
             mutate(
                 Tumor_Histologic_Type = str_to_title(Tumor_Histologic_Type)
-                ) %>%
+            ) %>%
             left_join(med_to_tcia,
                       by = c("Topographic_Site" = "MedDRA Term")) %>%
             rename( "TCIA_Collection" = "TCIA Collection") %>%
@@ -426,26 +465,15 @@ strategies <- list(
         slide_tbl <- strategies$slide_table(pull_date)
         ret  <- datascope %>%
             inner_join( slide_tbl %>%
-                       select(pub_subspec_id, filename) ) %>%
-            filter( !is.na(filename) ) %>%
+                        select(pub_subspec_id, filename) ) %>%
+            dplyr::filter( !is.na(filename) ) %>%
             rename( "Filename" = "filename" )
-        ## remove extra records associated with subspecimens - choose the rec with
-        ## the fewest NA entries
-        ## identify the subspecs with extra records:
-        ret_dup  <- ret %>% group_by(pub_subspec_id) %>% mutate(ct = n()) %>%
-            dplyr::filter(ct > 1)
-        if (nrow(ret_dup)) {
-            ret_sing  <- ret %>% group_by(pub_subspec_id) %>% mutate(ct = n()) %>%
-                dplyr::filter(ct == 1) %>% select( -ct )
-            ## now, count the number of NAs among a set of vars that have caused issues
-            ## and remove the rows (within each subspec group) that have the most NAs
-            ret_dedup <- ret_dup %>% rowwise() %>%
-                mutate( nas = sum(is.na(c(Tumor_Segment_Acceptable,Percent_Tumor_Nuclei,Is_Enriched)))) %>%
-                ungroup() %>% group_by(pub_subspec_id) %>%
-                dplyr::filter( nas == min(nas)) %>%
-                select( -ct, -nas)
-            ret  <- bind_rows(ret_sing, ret_dedup)
-        }
+        ## remove extra records associated with subspecimens - choose the latest rec
+        ## (by RecordPosition) with the fewest NA entries
+        ret <- dedup_by_fewest_nas( ret, pub_subspec_id,
+                                   c(Tumor_Segment_Acceptable,Percent_Tumor_Nuclei,Is_Enriched),
+                                   RecordPosition ) %>%
+            select(-RecordPosition)
         ret
     }
 )
