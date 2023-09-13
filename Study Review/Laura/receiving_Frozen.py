@@ -1,7 +1,7 @@
 import os,csv
 os.chdir("/Users/mohandasa2/Desktop/Laura-study/RAVE")
 
-bio=open("CMB_receiving_status.CSV",'r')
+bio=open("receiving_status.CSV",'r')
 revfh=csv.reader(bio)
 c=0
 dup={}
@@ -39,9 +39,9 @@ for line in revfh:
         if line[RecordActive]=='0':
             continue
         else:
-            if "Frozen" in line[InstanceName]:
+            if "Frozen" in line[InstanceName] or "Slide" in line[InstanceName] or "FFPE" in line[InstanceName]or "Bone Marrow Aspirate" in line[InstanceName]:
                 if "Andel" in line[SITEID_X2]:
-                    search = line[proj] + "_" + line[subId] + "_" + line[sub] + "_" + line[siteid] + "_" + line[Site] + "_" + line[SiteNum] + "_" + line[SUBSPCM]
+                    search = line[proj] + "_" + line[subId] + "_" + line[sub] + "_" + line[siteid] + "_" + line[Site] + "_" + line[SiteNum] + "_" + line[SPECID2_DRV]
                     y=search,line[SPECID2_DRV]
                     if line[SUBSPCM] in dup:
                         continue

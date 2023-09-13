@@ -1,7 +1,7 @@
 import os,csv
 
 os.chdir("/Users/mohandasa2/Desktop/dbGap Data")
-entity=open("entity_ids.20211010.csv",'r')
+entity=open("entity_ids.20211206.csv",'r')
 transfusion=open("Transfusion.csv",'r')
 output=open("Transfusion-output.txt",'w')
 transfusionfh=csv.reader(transfusion)
@@ -45,6 +45,8 @@ for i in interfh:
         for col in range(0,len(i)):
             if i[col]=="Subject":
                 sub=col
+            elif i[col]=="RecordPosition":
+                RecordPosition=col
             elif i[col]=="RecordActive":
                 RecordActive=col
             elif i[col]=="CMSTDAT":
@@ -61,7 +63,7 @@ for i in interfh:
         if i[RecordActive]=='0':
             continue
         else:
-            hh=[i[CMSTDAT],i[CMSTTIM],i[CMTRT_TRANSF],i[CMDOSTXT_TRANSF]]
+            hh=[i[RecordPosition],i[CMSTDAT],i[CMSTTIM],i[CMTRT_TRANSF],i[CMDOSTXT_TRANSF]]
             if i[sub] in transfusionDict:
                 if hh in transfusionDict.get(i[sub]):
                     continue

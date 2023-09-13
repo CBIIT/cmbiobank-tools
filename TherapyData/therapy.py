@@ -3,7 +3,7 @@ import numpy as np
 from dateutil import parser
 
 
-os.chdir("/Users/mohandasa2/Desktop/Laura-study/RAVE")
+os.chdir("/Users/mohandasa2/Desktop/Laura-study/Therapy")
 ther=open("nontargeted_data.txt",'r')
 output=open("TherapyData1.txt",'w')
 output.write("Subject"+"\t"+"Enrollment Date"+"\t"+"Targeted Therapy"+"\t"+"Targeted Therapy Start Date"+"\t"+"Targeted Therapy End Date"+"\t"+"Calculated Targeted End Date"+"\t"+"Non Targeted Therapy"+"\t"+"Non Targeted Start Date"+"\t"+"Non Targeted End Date"+"\t"+"End of Line"+"\t"+"Calculated Non targeted End Date"+"\n")

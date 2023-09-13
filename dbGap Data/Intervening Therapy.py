@@ -1,7 +1,7 @@
 import os,csv
 
 os.chdir("/Users/mohandasa2/Desktop/dbGap Data")
-entity=open("entity_ids.20211010.csv",'r')
+entity=open("entity_ids.20211206.csv",'r')
 baseline=open("Intervening Therapy.csv",'r')
 output=open("Intervening Therapy-output.txt",'w')
 baselinefh=csv.reader(baseline)

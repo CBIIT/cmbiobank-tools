@@ -3,7 +3,7 @@ import os,csv
 os.chdir("/Users/mohandasa2/Desktop/Laura-study/RAVE")
 inv=open("specimenTracking_enrollment_Output.txt",'r')
 invfh=inv.readlines()
-onco=open("CMB_oncomine_result.CSV",'r')
+onco=open("oncomine_result.CSV",'r')
 oncofh=csv.reader(onco)
 oncolist=[]
 

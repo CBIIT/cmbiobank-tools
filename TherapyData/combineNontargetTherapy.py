@@ -1,7 +1,7 @@
 # open non targeted therapy data and add the values from 102 patient
 import os
 
-os.chdir("/Users/mohandasa2/Desktop/Laura-study/RAVE")
+os.chdir("/Users/mohandasa2/Desktop/Laura-study/Therapy")
 nonTargeted=open("prior__therapy_supplement.txt",'r')
 nonTargetFinal=open("nontargeted_data.txt",'w')
 nonTargetFinal.write("Subject"+"\t"+"Enrollment Date"+"\t"+"Targeted Therapy"+"\t"+"Targeted Therapy Start Date"+"\t"+"Targeted Therapy End Date"+"\t"+"Non Targeted Therapy"+"\t"+"Non Targeted Start Date"+"\t"+"Non Targeted End Date"+"\t"+"End of Line"+"\n")
@@ -33,7 +33,7 @@ for mus in nonval:
             ff=mus[6]
             dash=ff.split("-")
             if dash[1]>='0102':
-                # print(mus[cmtrt])
+            # print(mus[cmtrt])
                 if match in newkey:
                     newkey[match].append(mus[cmtrt])
                     nontarget_start[match].append(mus[date_start])
@@ -46,9 +46,9 @@ for mus in nonval:
                     nontarget_start[match].append(mus[date_start])
                     nontarget_end[match].append(mus[date_end])
 
-#
+
 # for x,y in newkey.items():
-    # print(x,y)
+#     print(x,y)
 previousTarget=open("FinalList.txt",'r')
 pre=previousTarget.readlines()
 tarDict={}
@@ -82,7 +82,7 @@ for m,n in newkey.items():
         continue
     else:
         nonTargetFinal.write(m+"\t"+""+"\t"+""+"\t"+""+"\t"+""+"\t"+str(n)+"\t"+str(nontarget_start.get(m))+"\t"+str(nontarget_end.get(m))+"\n")
-        print(m,n)
+#         print(m,n)
 
 
 

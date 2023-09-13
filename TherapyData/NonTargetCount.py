@@ -1,5 +1,5 @@
 import os
-os.chdir("/Users/mohandasa2/Desktop/Laura-study/RAVE")
+os.chdir("/Users/mohandasa2/Desktop/Laura-study/Therapy")
 ther=open("nontargetCount.txt",'r')
 outputfinal=open("NonTargetedTherapyCount.txt",'w')
 outputfinal.write("Disease Code"+"\t"+"Drug"+"\t"+"Count"+"\n")

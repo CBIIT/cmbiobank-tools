@@ -5,7 +5,7 @@ supp=open("radiation.txt",'r')
 suppfh=supp.readlines()
 # suppfh=csv.reader(supp)
 
-off=open("CMB_off_study.CSV",'r')
+off=open("off_study.CSV",'r')
 offh=csv.reader(off)
 offList={}
 newofflist={}
@@ -41,21 +41,21 @@ for i in offh:
             continue
         else:
             search3 = i[subId] + "_" + i[sub] + "_" + i[siteid] + "_" + i[Site] + "_" + i[proj] + "_" + i[SiteNum]
-            offstudy=[search3,i[DSSTDAT],i[DSDECOD_OS]]
+            offstudy=[search3,i[DSSTDAT],i[DSDECOD_OS],i[DSTERM_OTH_OS]]
             final = [x.replace('', "NA") if x == '' else x for x in offstudy]
 
             if final[0] in offList:
                 offList[final[0]].append(final[1])
-                # offList[final[0]].append(final[2])
-                # offList[final[0]].append(final[3])
+                offList[final[0]].append(final[2])
+                offList[final[0]].append(final[3])
 
 
 
             else:
                 offList[final[0]] = []
                 offList[final[0]].append(final[1])
-                # offList[final[0]].append(final[2])
-                # offList[final[0]].append(final[3])
+                offList[final[0]].append(final[2])
+                offList[final[0]].append(final[3])
 
 
 
@@ -64,18 +64,22 @@ oncores = open("offStudyOutput.txt", 'w')
 for value in suppfh:
     value=value.rstrip().split("\t")
     if value[0] in offList:
-        oncores.write("\t".join(value) + "\t" + str(set(offList.get(value[0]))) + "\n")
+        xx=offList.get(value[0])
+        print(xx[0])
+        oncores.write("\t".join(value) + "\t" +xx[0]+"\t"+xx[1]+"\t"+xx[2]+ "\n")
+
+        # oncores.write("\t".join(value) + "\t" + str(set(offList.get(value[0]))) + "\n")
     else:
         if "Key" in value[0]:
             oncores.write("\t".join(value) + "\t" + "Off Study Date ""\n")
         else:
-            oncores.write("\t".join(value) + "\t"+ "NA"+"\t"+"NA" + "\n")
+            oncores.write("\t".join(value) + "\t"+ "NA"+"\t"+"NA"+"\t"+"NA"+"\n")
 #         offList.append(final)
 #
 # oncores = open("offStudyOutput.csv", 'w')
 #
-# for i in suppfh:
-#     newlist = [k[0] for k in offList]
+# for i in suppfh:å
+#     newlist = [k[0] for k in offList]å
 #     if i[0] in newlist:
 #         for y in offList:
 #             if i[0] == y[0]:

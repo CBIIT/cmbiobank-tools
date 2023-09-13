@@ -1,7 +1,7 @@
 import os,csv
 
 os.chdir("/Users/mohandasa2/Desktop/dbGap Data")
-entity=open("entity_ids.20211010.csv",'r')
+entity=open("entity_ids.20211206.csv",'r')
 serology=open("Serology.csv",'r')
 output=open("Serology-output.txt",'w')
 serologyfh=csv.reader(serology)
@@ -45,6 +45,8 @@ for i in interfh:
         for col in range(0,len(i)):
             if i[col]=="Subject":
                 sub=col
+            elif i[col]=="RecordPosition":
+                RecordPosition=col
             elif i[col]=="RecordActive":
                 RecordActive=col
             elif i[col]=="LBTEST_SER":
@@ -63,7 +65,7 @@ for i in interfh:
         if i[RecordActive]=='0':
             continue
         else:
-            hh=[i[LBTEST_SER],i[LBSPEC],i[LBDAT],i[LBTIM],i[LBORRES]]
+            hh=[i[RecordPosition],i[LBTEST_SER],i[LBSPEC],i[LBDAT],i[LBTIM],i[LBORRES]]
             if i[sub] in serologyDict:
                 if hh in serologyDict.get(i[sub]):
                     continue

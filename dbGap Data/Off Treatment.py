@@ -1,7 +1,7 @@
 import os,csv
 
-os.chdir("/Users/mohandasa2/Desktop/dbGap Data")
-entity=open("entity_ids.20211010.csv",'r')
+os.chdir("/Users/mohandasa2/Desktop/dbGap Data/Submission-V2/RAVE")
+entity=open("entity_ids.20230227.csv",'r')
 offtreat=open("Off Treatment.csv",'r')
 output=open("Off Treatment-output.txt",'w')
 offtreatfh=csv.reader(offtreat)
@@ -36,8 +36,8 @@ for x in entityfh:
 
 
 #Searching in CMB Off Treatment file to get the data
-os.chdir("/Users/mohandasa2/Desktop/dbGap Data/RAVE")
-inter = open("CMB_off_treatment.CSV", 'r')
+os.chdir("/Users/mohandasa2/Desktop/dbGap Data/Submission-V2/RAVE")
+inter = open("off_treatment.CSV", 'r')
 interfh = csv.reader(inter)
 offTreatDict={}
 for i in interfh:
@@ -49,7 +49,7 @@ for i in interfh:
                 RecordActive=col
             elif i[col]=="TAC01":
                 TAC01=col
-            elif i[col] == "DSSTDAT":
+            elif i[col] == "DSSTDAT_RAW":
                 DSSTDAT = col
             elif i[col] == "DSDECOD":
                 DSDECOD = col
@@ -57,9 +57,9 @@ for i in interfh:
                 DSTERM_OTH = col
             elif i[col] == "BESTRESP":
                 BESTRESP = col
-            elif i[col] == "RSDAT_X1":
+            elif i[col] == "RSDAT_X1_RAW":
                 RSDAT_X1 = col
-            elif i[col] == "RSDAT_X2":
+            elif i[col] == "RSDAT_X2_RAW":
                 RSDAT_X2 = col
             elif i[col] == "DSCONT":
                 DSCONT = col
@@ -67,7 +67,8 @@ for i in interfh:
                 DSCONT_FU = col
 
     else:
-        if i[RecordActive]=='0':
+        vv=i[sub].split("-")
+        if i[RecordActive]=='0' or vv[1] >"0125":
             continue
         else:
             hh=[i[TAC01],i[DSSTDAT],i[DSDECOD],i[DSTERM_OTH],i[BESTRESP],i[RSDAT_X1],i[RSDAT_X2],i[DSCONT],i[DSCONT_FU]]
@@ -102,5 +103,10 @@ for con in offtreatfh:
                         output.write(t + "\t" + hhh + "\t" + "\t".join(each) + "\n")
             else:
                 output.write(t + "\t" + hhh + "\t" + "-"+"\t" + "-"+"\t" + "-"+"\t" + "-"+ "-"+"\t" + "-"+"\t" + "-"+"\t" + "-"+ "\n")
+
+        else:
+            output.write(t + "\t" + hhh + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\n")
+
+
 
 

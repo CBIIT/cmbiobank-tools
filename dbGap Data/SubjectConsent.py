@@ -1,7 +1,7 @@
 import os,csv
 
 os.chdir("/Users/mohandasa2/Desktop/dbGap Data")
-entity=open("entity_ids.20211010.csv",'r')
+entity=open("entity_ids.20211206.csv",'r')
 output=open("SubjectConsent-output.csv",'w')
 consent=open("2a_SubjectConsent_DS.csv",'r')
 consentfh=csv.reader(consent)
@@ -66,15 +66,18 @@ for con in consentfh:
         for cont in range(0,len(con)):
             if "SUBJECT_ID" in con[cont]:
                 sub=cont
+            elif "CONSENT" in con[cont]:
+                consent=cont
     else:
         t=con[sub]
+
         if t in enrollDic:
             cid=enrollDic.get(t)
             # print(t, len(enrollDic.get(t)))
             if len(cid)==1:
                 if cid[0] in EnrollmentSex:
-                    print (t,cid[0],EnrollmentSex.get(cid[0])[0])
-                    output.write(t+","+EnrollmentSex.get(cid[0])[0]+"\n")
+                    # print (t,con[consent],cid[0],EnrollmentSex.get(cid[0])[0])
+                    output.write(t+","+con[consent]+","+EnrollmentSex.get(cid[0])[0]+"\n")
             else:
                 print ("ERRRRROORRRRRRRRRRRRRRRRRRR")
 

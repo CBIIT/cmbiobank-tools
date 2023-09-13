@@ -1,6 +1,6 @@
 import os
-os.chdir("/Users/mohandasa2/Desktop/Laura-study/RAVE")
-ther=open("counttherapy.txt",'r')
+os.chdir("/Users/mohandasa2/Desktop/Laura-study/Therapy")
+ther=open("Tartherapy-unique.txt",'r',encoding='latin-1')
 outputfinal=open("TargetedTherapyCount.txt",'w')
 outputfinal.write("Disease Code"+"\t"+"Drug"+"\t"+"Count"+"\n")
 
@@ -8,6 +8,7 @@ Therapy={}
 
 for i in ther:
     i=i.rstrip().split("\t")
+    print(i)
     if "," in i[1]:
         val=i[1].split(",")
         for y in val:

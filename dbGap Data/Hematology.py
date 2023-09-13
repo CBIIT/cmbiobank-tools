@@ -1,8 +1,8 @@
 import os,csv
 
-os.chdir("/Users/mohandasa2/Desktop/dbGap Data")
-entity=open("entity_ids.20211010.csv",'r')
-hematology=open("Hematology.csv",'r')
+os.chdir("/Users/mohandasa2/Desktop/dbGap Data/Submission-V2/RAVE")
+entity=open("entity_ids.20230227.csv",'r')
+hematology=open("Hematology DS.csv",'r')
 output=open("Hematology-output.txt",'w')
 hematologyfh=csv.reader(hematology)
 entityfh=csv.reader(entity)
@@ -36,8 +36,8 @@ for x in entityfh:
 
 
 #Searching in CMB Hematology file to get the data
-os.chdir("/Users/mohandasa2/Desktop/dbGap Data/RAVE")
-inter = open("CMB_hematology.CSV", 'r')
+os.chdir("/Users/mohandasa2/Desktop/dbGap Data/Submission-V2/RAVE")
+inter = open("hematology.CSV", 'r')
 interfh = csv.reader(inter)
 hematologyDict={}
 for i in interfh:
@@ -47,9 +47,9 @@ for i in interfh:
                 sub=col
             elif i[col]=="RecordActive":
                 RecordActive=col
-            elif i[col]=="PageRepeatNumber":
-                PageRepeatNumber=col
-            elif i[col]=="LBDAT":
+            elif i[col]=="RecordId":
+                RecordId=col
+            elif i[col]=="LBDAT_RAW":
                 LBDAT=col
             elif i[col] == "LBTIM":
                 LBTIM = col
@@ -95,10 +95,11 @@ for i in interfh:
                 LB_LBORRES_LYM = col
 
     else:
-        if i[RecordActive]=='0':
+        vv=i[sub].split("-")
+        if i[RecordActive]=='0' or vv[1]>'0125':
             continue
         else:
-            hh=[i[PageRepeatNumber],i[LBDAT],i[LBTIM],i[LB_LBORRES_HGB],i[LB_LBORRES_HCT],i[LB_LBORRES_WBC],i[LBORRES_NEUTLE],i[LBORRES_LYMLE],i[LBORRES_BASOLE],i[LBORRES_MONOLE],i[LBORRES_EOSLE],i[LBORRES_NEUTBNE],i[LBORRES_BLASTLE],i[LB_LBORRES_PLAT],i[LB_LBORRES_NEUT],i[LBORRES_LYMATLE],i[LB_LBORRES_RBC],i[LBORRES_RETIRBC],i[LB_LBORRES_ESR],i[LB_LBORRES_PT],i[LBORRES_APTT],i[LB_LBORRES_INR],i[LB_LBORRES_LYM]]
+            hh=[i[RecordId],i[LBDAT],i[LBTIM],i[LB_LBORRES_HGB],i[LB_LBORRES_HCT],i[LB_LBORRES_WBC],i[LBORRES_NEUTLE],i[LBORRES_LYMLE],i[LBORRES_BASOLE],i[LBORRES_MONOLE],i[LBORRES_EOSLE],i[LBORRES_NEUTBNE],i[LBORRES_BLASTLE],i[LB_LBORRES_PLAT],i[LB_LBORRES_NEUT],i[LBORRES_LYMATLE],i[LB_LBORRES_RBC],i[LBORRES_RETIRBC],i[LB_LBORRES_ESR],i[LB_LBORRES_PT],i[LBORRES_APTT],i[LB_LBORRES_INR],i[LB_LBORRES_LYM]]
             if i[sub] in hematologyDict:
                 if hh in hematologyDict.get(i[sub]):
                     continue
@@ -130,5 +131,9 @@ for con in hematologyfh:
                         output.write(t + "\t" + hhh + "\t" + "\t".join(each) + "\n")
             else:
                 output.write(t + "\t" + hhh + "\t" + "-"+"\t" + "-"+"\t" + "-"+"\t" + "-"+"\t"+ "-"+"\t" + "-"+"\t" + "-"+"\t" + "-"+"\t" + "-"+"\t" + "-"+"\t" + "-"+"\t" + "-"+"\t"+ "\t" + "-"+"\t" + "-"+"\t" + "-"+"\t" + "-"+"\t"+ "-"+"\t" + "-"+"\t" + "-"+"\t" + "-"+"\t" + "-"+"\t" + "-"+"\t"  +"\n")
+        else:
+            output.write(t + "\t" + hhh + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "\n")
+
+
 
 

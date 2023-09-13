@@ -1,7 +1,7 @@
 import os,csv
 
-os.chdir("/Users/mohandasa2/Desktop/dbGap Data")
-entity=open("entity_ids.20211010.csv",'r')
+os.chdir("/Users/mohandasa2/Desktop/dbGap Data/Submission-V2/RAVE")
+entity=open("entity_ids.20230227.csv",'r')
 newLesion=open("New Lesion.csv",'r')
 output=open("New Lesion-output.txt",'w')
 newLesionfh=csv.reader(newLesion)
@@ -36,8 +36,8 @@ for x in entityfh:
 
 
 #Searching in CMB New Lesion file to get the data
-os.chdir("/Users/mohandasa2/Desktop/dbGap Data/RAVE")
-inter = open("CMB_new_lesion.CSV", 'r')
+os.chdir("/Users/mohandasa2/Desktop/dbGap Data/Submission-V2/RAVE")
+inter = open("new_lesion.CSV", 'r')
 interfh = csv.reader(inter)
 NewLesionDict={}
 for i in interfh:
@@ -47,10 +47,8 @@ for i in interfh:
                 sub=col
             elif i[col]=="RecordActive":
                 RecordActive=col
-            elif i[col]=="PageRepeatNumber":
-                PageRepeatNumber=col
-            elif i[col] == "RecordPosition":
-                RecordPosition = col
+            elif i[col] == "RecordId":
+                RecordId = col
             elif i[col] == "TULNKID":
                 TULNKID = col
             elif i[col] == "TULOC":
@@ -79,10 +77,11 @@ for i in interfh:
                 EVAL_LESION = col
 
     else:
-        if i[RecordActive]=='0':
+        vv=i[sub].split("-")
+        if i[RecordActive]=='0' or vv[1] >'0125':
             continue
         else:
-            hh=[i[PageRepeatNumber],i[RecordPosition],i[TULNKID],i[TULOC],i[TUORRES_DESC],i[TUORRES_FFRIND],i[ASMTTPT],i[TRDAT],i[TRMETHOD],i[TRORRES_X],i[CKBOX_LONG_X],i[TRORRES_Y],i[CKBOX_LONG_Y],i[LSRESP_NEW],i[EVAL_LESION]]
+            hh=[i[RecordId],i[TULNKID],i[TULOC],i[TUORRES_DESC],i[TUORRES_FFRIND],i[ASMTTPT],i[TRDAT],i[TRMETHOD],i[TRORRES_X],i[CKBOX_LONG_X],i[TRORRES_Y],i[CKBOX_LONG_Y],i[LSRESP_NEW],i[EVAL_LESION]]
             if i[sub] in NewLesionDict:
                 if hh in NewLesionDict.get(i[sub]):
                     continue

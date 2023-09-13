@@ -1,6 +1,6 @@
 import os
 # code to add the targeted therapy to the Therapy code file
-os.chdir("/Users/mohandasa2/Desktop/Laura-study/RAVE")
+os.chdir("/Users/mohandasa2/Desktop/Laura-study/Therapy")
 ther=open("targeted_therapy_administration.csv",'r')
 outputfinal=open("FinalList.txt",'w')
 outputfinal.write("Subject"+"\t"+"Enrollment Date"+"\t"+"Targeted Therapy"+"\t"+"Targeted Therapy Start Date"+"\t"+"Targeted Therapy End Date"+"\t"+"Non Targeted Therapy"+"\t"+"Non Targeted Start Date"+"\t"+"Non Targeted End Date"+"\t"+"End of Line"+"\n")
@@ -57,7 +57,7 @@ for i in ther:
 # for x,y in startdict.items():
 #     print(x,y)
 #open the Therapy code data file match the key values and append the data to this file
-data= open("Therapy code.txt",'r')
+data= open("unFiltered Therapy data.txt",'r')
 datafh=data.readlines()
 lookupkey={}
 

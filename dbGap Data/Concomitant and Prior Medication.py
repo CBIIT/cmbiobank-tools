@@ -1,8 +1,8 @@
 import os,csv
 
-os.chdir("/Users/mohandasa2/Desktop/dbGap Data")
-entity=open("entity_ids.20211010.csv",'r')
-conPrior=open("Concomitant and Prior Medication.csv",'r')
+os.chdir("/Users/mohandasa2/Desktop/dbGap Data/Submission-V2/RAVE")
+entity=open("entity_ids.20230227.csv",'r')
+conPrior=open("Concomitant and Prior Medicatio temp.csv",'r')
 output=open("Concomitant and Prior Medication-output.txt",'w')
 conPriorfh=csv.reader(conPrior)
 entityfh=csv.reader(entity)
@@ -36,8 +36,8 @@ for x in entityfh:
 
 
 #Searching in CMB Concomitant and Prior Medication file to get the data
-os.chdir("/Users/mohandasa2/Desktop/dbGap Data/RAVE")
-inter = open("CMB_concomitant_and_prior_medications.CSV", 'r')
+os.chdir("/Users/mohandasa2/Desktop/dbGap Data/Submission-V2/RAVE")
+inter = open("concomitant_and_prior_medications.CSV", 'r')
 interfh = csv.reader(inter)
 conPriorDict={}
 for i in interfh:
@@ -47,9 +47,11 @@ for i in interfh:
                 sub=col
             elif i[col]=="RecordActive":
                 RecordActive=col
-            elif i[col]=="CMSTDAT":
+            elif i[col]=="RecordId":
+                RecordId=col
+            elif i[col]=="CMSTDAT_RAW":
                 CMSTDAT=col
-            elif i[col]=="CMENDAT":
+            elif i[col]=="CMENDAT_RAW":
                 CMENDAT=col
             elif i[col] == "CMTRT":
                 CMTRT = col
@@ -66,10 +68,11 @@ for i in interfh:
 
 
     else:
-        if i[RecordActive]=='0':
+        tab= i[sub].split("-")
+        if i[RecordActive]=='0' or tab[1] > "0125":
             continue
         else:
-            hh=[i[CMSTDAT],i[CMENDAT],i[CMTRT],i[CMDOSTOT],i[CMDOSU],i[CMDOSFRQ],i[CMDOSRGM],i[CMINDC]]
+            hh=[i[RecordId],i[CMSTDAT],i[CMENDAT],i[CMTRT],i[CMDOSTOT],i[CMDOSU],i[CMDOSFRQ],i[CMDOSRGM],i[CMINDC]]
             if i[sub] in conPriorDict:
                 if hh in conPriorDict.get(i[sub]):
                     continue
@@ -82,7 +85,6 @@ for i in interfh:
 # for m,n in DeathSummary.items():
 #     print(m,n)
 for con in conPriorfh:
-    entityDic={}
     if "SUBJECT_ID" in con[0]:
         for cont in range(0,len(con)):
             if "SUBJECT_ID" in con[cont]:
@@ -94,12 +96,16 @@ for con in conPriorfh:
             # print(hhh,type(hhh))r
             if hhh in conPriorDict:
                 if len(conPriorDict.get(hhh)) == 1:
-                    print (t, enrollDic.get(t), conPriorDict.get(hhh),           'pppp')
+                    # print (t, enrollDic.get(t), conPriorDict.get(hhh),           'pppp')
                     output.write(t + "\t" + hhh + "\t" + "\t".join(conPriorDict.get(hhh)[0]) + "\n")
                 else:
                     for each in conPriorDict.get(hhh):
                         output.write(t + "\t" + hhh + "\t" + "\t".join(each) + "\n")
             else:
                 output.write(t + "\t" + hhh + "\n")
+        else:
+            output.write(t + "\t" + hhh + "\n")
+
+
 
 

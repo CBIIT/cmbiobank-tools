@@ -3,7 +3,7 @@ import os,csv
 os.chdir("/Users/mohandasa2/Desktop/Laura-study/RAVE")
 conco=open("oncoOutput.txt",'r')
 concofh=conco.readlines()
-bio=open("CMB_biopsy_pathology_verification_and_assessment.CSV",'r')
+bio=open("biopsy_pathology_verification_and_assessment.CSV",'r')
 biofh=csv.reader(bio)
 bioList={}
 

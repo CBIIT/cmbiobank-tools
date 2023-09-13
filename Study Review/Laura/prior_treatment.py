@@ -5,7 +5,7 @@ bio=open("prior_SuppOutput.txt",'r')
 biofh=bio.readlines()
 # biofh=csv.reader(bio)
 
-prior=open("CMB_prior__surgery_supplement.CSV",'r')
+prior=open("prior__surgery_supplement.CSV",'r')
 priorfh=csv.reader(prior)
 ptList={}
 

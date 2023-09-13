@@ -3,7 +3,7 @@ import os,csv
 os.chdir("/Users/mohandasa2/Desktop/Laura-study/RAVE")
 file1=open("specimenEnrollmentdate-output.txt","r")
 Fout=file1.readlines()
-file=open("CMB_receiving_status.csv",'r')
+file=open("receiving_status.csv",'r')
 fh=csv.reader(file)
 receiving={}
 
@@ -36,7 +36,7 @@ for x in Fout:
         for every in range(0,len(x)):
             if x[every]=="Sub Specimen ID":
                 ID=every
-        output.write("\t".join(x) + "\t" + "Received at VARI" + "\n")
+        output.write("\t".join(x) + "\t" + "Date Received at VARI" + "\n")
     else:
         if x[ID] in receiving:
             output.write("\t".join(x)+"\t"+receiving.get(x[ID])+"\n")

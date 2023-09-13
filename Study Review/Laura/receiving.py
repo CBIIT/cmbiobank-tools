@@ -3,7 +3,7 @@ import os,csv
 os.chdir("/Users/mohandasa2/Desktop/Laura-study/RAVE")
 file1=open("specimen_transmittal_output_seperate.txt","r")
 Fout=file1.readlines()
-file=open("CMB_receiving_status.csv",'r')
+file=open("receiving_status.csv",'r')
 fh=csv.reader(file)
 receiving={}
 samp={}
@@ -41,11 +41,11 @@ for i in fh:
 output=open("outputreceiving.txt",'w')
 for x in Fout:
     x=x.rstrip().split("\t")
-    if "Subject" in x[0]:
+    if "SubjectID" in x[0]:
         for every in range(0,len(x)):
             if x[every]=="Sub Specimen ID":
                 ID=every
-        output.write("\t".join(x) + "\t" + "Shipped to VARI" +"\t"+"Specimen inadequacy when received at VARI"+"\t"+"Reason for inadequacy"+ "\n")
+        output.write("\t".join(x) + "\t" + "Shipped to VARI" +"\t"+"Specimen adequacy when received at VARI"+"\t"+"Reason for inadequacy"+ "\n")
     else:
             if x[ID] in receiving:
                 output.write("\t".join(x)+"\t"+"\t".join(receiving.get(x[ID]))+"\n")

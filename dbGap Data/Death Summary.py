@@ -1,7 +1,7 @@
 import os,csv
 
-os.chdir("/Users/mohandasa2/Desktop/dbGap Data")
-entity=open("entity_ids.20211010.csv",'r')
+os.chdir("/Users/mohandasa2/Desktop/dbGap Data/Submission-V2/RAVE")
+entity=open("entity_ids.20230227.csv",'r')
 deathsumm=open("Death Summary.csv",'r')
 output=open("Death Summary-output.txt",'w')
 deathsummfh=csv.reader(deathsumm)
@@ -36,8 +36,8 @@ for x in entityfh:
 
 
 #Searching in CMB Death Summary file to get the data
-os.chdir("/Users/mohandasa2/Desktop/dbGap Data/RAVE")
-inter = open("CMB_death_summary.CSV", 'r')
+os.chdir("/Users/mohandasa2/Desktop/dbGap Data/Submission-V2/RAVE")
+inter = open("death_summary.CSV", 'r')
 interfh = csv.reader(inter)
 DeathSummary={}
 for i in interfh:
@@ -47,7 +47,7 @@ for i in interfh:
                 sub=col
             elif i[col]=="RecordActive":
                 RecordActive=col
-            elif i[col]=="DSSTDAT":
+            elif i[col]=="DSSTDAT_RAW":
                 DSSTDAT=col
             elif i[col] == "DSAUTPSY":
                 DSAUTPSY = col
@@ -59,7 +59,8 @@ for i in interfh:
                 TULOC = col
 
     else:
-        if i[RecordActive]=='0':
+        xx=i[sub].split("-")
+        if i[RecordActive]=='0' or xx[1] > '0125':
             continue
         else:
             hh=[i[DSSTDAT],i[DSAUTPSY],i[DDORRES_X1],i[PRCDTH_DDORRES],i[TULOC]]
@@ -87,12 +88,15 @@ for con in deathsummfh:
             # print(hhh,type(hhh))
             if hhh in DeathSummary:
                 if len(DeathSummary.get(hhh)) == 1:
-                    print (t, enrollDic.get(t), DeathSummary.get(hhh),           'pppp')
+                    # print (t, enrollDic.get(t), DeathSummary.get(hhh),           'pppp')
                     output.write(t + "\t" + hhh + "\t" + "\t".join(DeathSummary.get(hhh)[0]) + "\n")
                 else:
                     for each in DeathSummary.get(hhh):
                         output.write(t + "\t" + hhh + "\t" + "\t".join(each) + "\n")
             else:
                 output.write(t + "\t" + hhh + "\t" + "-"+"\t" + "-"+"\t" + "-"+"\t" + "-"+ "-"+"\t" + "-"+"\t" + "-"+"\t" + "-"+ "\n")
+
+        else:
+            output.write(t + "\t" + hhh + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\n")
 
 

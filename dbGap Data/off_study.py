@@ -1,7 +1,7 @@
 import os,csv
 
-os.chdir("/Users/mohandasa2/Desktop/dbGap Data")
-entity=open("entity_ids.20211010.csv",'r')
+os.chdir("/Users/mohandasa2/Desktop/dbGap Data/Submission-V2/RAVE")
+entity=open("entity_ids.20230227.csv",'r')
 offstudy=open("Off Study.csv",'r')
 output=open("Off Study-output.txt",'w')
 offstudyfh=csv.reader(offstudy)
@@ -36,8 +36,8 @@ for x in entityfh:
 
 
 #Searching in CMB Off Study file to get the data
-os.chdir("/Users/mohandasa2/Desktop/dbGap Data/RAVE")
-inter = open("CMB_off_study.CSV", 'r')
+os.chdir("/Users/mohandasa2/Desktop/dbGap Data/Submission-V2/RAVE")
+inter = open("off_study.CSV", 'r')
 interfh = csv.reader(inter)
 offstudyDict={}
 for i in interfh:
@@ -47,7 +47,7 @@ for i in interfh:
                 sub=col
             elif i[col]=="RecordActive":
                 RecordActive=col
-            elif i[col]=="DSSTDAT":
+            elif i[col]=="DSSTDAT_RAW":
                 DSSTDAT=col
             elif i[col] == "DSDECOD_OS":
                 DSDECOD_OS = col
@@ -65,7 +65,8 @@ for i in interfh:
                 MRCNSTNY = col
 
     else:
-        if i[RecordActive]=='0':
+        vv=i[sub].split("-")
+        if i[RecordActive]=='0' or vv[1] >"0125":
             continue
         else:
             hh=[i[DSSTDAT],i[DSDECOD_OS],i[DSTERM_OTH_OS],i[BESTRESP],i[RSDAT_X1],i[RSDAT_X2],i[STORCNSTNY],i[MRCNSTNY]]
@@ -100,5 +101,9 @@ for con in offstudyfh:
                         output.write(t + "\t" + hhh + "\t" + "\t".join(each) + "\n")
             else:
                 output.write(t + "\t" + hhh + "\t" + "-"+"\t" + "-"+"\t" + "-"+"\t" + "-"+ "-"+"\t" + "-"+"\t" + "-"+"\t" + "-"+ "\n")
+        else:
+            output.write(t + "\t" + hhh + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\n")
+
+
 
 
