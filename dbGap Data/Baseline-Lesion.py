@@ -1,7 +1,12 @@
 import os,csv
 
+<<<<<<< Updated upstream
 os.chdir("/Users/mohandasa2/Desktop/dbGap Data/Submission-V2/RAVE")
 entity=open("entity_ids.20230227.csv",'r')
+=======
+os.chdir("/Users/mohandasa2/Desktop/dbGap Data")
+entity=open("entity_ids.20211010.csv",'r')
+>>>>>>> Stashed changes
 baseline=open("Baseline Lesion.csv",'r')
 output=open("BaselineLesion-output.txt",'w')
 baselinefh=csv.reader(baseline)
@@ -38,8 +43,13 @@ for x in entityfh:
 
 
 #Searching in CMB Baseline Lesion file to get the data
+<<<<<<< Updated upstream
 os.chdir("/Users/mohandasa2/Desktop/dbGap Data/Submission-V2/RAVE")
 lesion = open("baseline_lesion.CSV", 'r')
+=======
+os.chdir("/Users/mohandasa2/Desktop/dbGap Data/RAVE")
+lesion = open("CMB_baseline_lesion.CSV", 'r')
+>>>>>>> Stashed changes
 lesionfh = csv.reader(lesion)
 BaselineDict={}
 for i in lesionfh:
@@ -47,10 +57,15 @@ for i in lesionfh:
         for col in range(0,len(i)):
             if i[col]=="Subject":
                 sub=col
+<<<<<<< Updated upstream
             elif i[col] == "RecordId":
                 RecordId = col
             elif i[col]=="TULNKID":
                 TULNKID=col
+=======
+            elif i[col]=="TULNKID":
+                nos=col
+>>>>>>> Stashed changes
             elif i[col]=="TULOC":
                 TULOC=col
             elif i[col] == "TUORRES_DESC":
@@ -63,6 +78,11 @@ for i in lesionfh:
                 TUORRES_FFRIND = col
             elif i[col] == "ASMTTPT":
                 ASMTTPT = col
+<<<<<<< Updated upstream
+=======
+            elif i[col] == "RecordPosition":
+                RecordPosition = col
+>>>>>>> Stashed changes
             elif i[col] == "TRDAT":
                 TRDAT = col
             elif i[col] == "TRMETHOD":
@@ -83,11 +103,18 @@ for i in lesionfh:
                 EVAL_LESION = col
 
     else:
+<<<<<<< Updated upstream
         vv=i[sub].split("-")
         if i[RecordActive]=="0" or vv[1]>"0125":
             continue
         else:
             hh=[i[RecordId],i[TULNKID],i[TULOC],i[TUORRES_DESC],i[TUORRES_PREVIR],i[TUTRGNY],i[TUORRES_FFRIND],i[ASMTTPT],i[TRDAT],i[TRMETHOD],i[TRORRES_RELDIAM],i[CKBOX_LONG_X],i[TRORRES_PERP],i[CKBOX_LONG_Y],i[LSRESP],i[EVAL_LESION]]
+=======
+        if i[RecordActive]=="0":
+            continue
+        else:
+            hh=[i[nos],i[RecordPosition],i[TULOC],i[TUORRES_DESC],i[TUORRES_PREVIR],i[TUTRGNY],i[TUORRES_FFRIND],i[ASMTTPT],i[TRDAT],i[TRMETHOD],i[TRORRES_RELDIAM],i[CKBOX_LONG_X],i[TRORRES_PERP],i[CKBOX_LONG_Y],i[LSRESP],i[EVAL_LESION]]
+>>>>>>> Stashed changes
             if i[sub] in BaselineDict:
                 if hh in BaselineDict.get(i[sub]):
                     continue
@@ -108,17 +135,24 @@ for con in baselinefh:
             hhh=enrollDic.get(t)
             if hhh in BaselineDict:
                 if len(BaselineDict.get(hhh))==1:
+<<<<<<< Updated upstream
                     # print (t,enrollDic.get(t),BaselineDict.get(hhh))
+=======
+                    print (t,enrollDic.get(t),BaselineDict.get(hhh))
+>>>>>>> Stashed changes
                     output.write(t+"\t"+hhh+"\t"+"\t".join(BaselineDict.get(hhh)[0])+"\n")
                 else:
                     for each in BaselineDict.get(hhh):
                         output.write(t + "\t"+hhh+"\t"+ "\t".join(each) + "\n")
             else:
                 output.write(t + "\t" + hhh + "\t" + "-"+"\t" + "-"+"\t" + "-"+"\t" + "-"+"\t" + "-"+"\t" + "-"+"\t" + "-"+"\t" + "-"+"\t" + "-"+"\t" + "-"+"\t" + "-"+"\t" + "-"+"\t" + "-"+"\t" + "-"+"\t" + "-"+ "\n")
+<<<<<<< Updated upstream
         else:
             output.write(
                 t + "\t" + hhh + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\n")
 
+=======
+>>>>>>> Stashed changes
 
 
 

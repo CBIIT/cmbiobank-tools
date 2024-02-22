@@ -1,7 +1,11 @@
 import os,csv
 
 os.chdir("/Users/mohandasa2/Desktop/dbGap Data")
+<<<<<<< Updated upstream
 entity=open("entity_ids.20211206.csv",'r')
+=======
+entity=open("entity_ids.20211010.csv",'r')
+>>>>>>> Stashed changes
 serology=open("Serology.csv",'r')
 output=open("Serology-output.txt",'w')
 serologyfh=csv.reader(serology)
@@ -45,8 +49,11 @@ for i in interfh:
         for col in range(0,len(i)):
             if i[col]=="Subject":
                 sub=col
+<<<<<<< Updated upstream
             elif i[col]=="RecordPosition":
                 RecordPosition=col
+=======
+>>>>>>> Stashed changes
             elif i[col]=="RecordActive":
                 RecordActive=col
             elif i[col]=="LBTEST_SER":
@@ -65,7 +72,11 @@ for i in interfh:
         if i[RecordActive]=='0':
             continue
         else:
+<<<<<<< Updated upstream
             hh=[i[RecordPosition],i[LBTEST_SER],i[LBSPEC],i[LBDAT],i[LBTIM],i[LBORRES]]
+=======
+            hh=[i[LBTEST_SER],i[LBSPEC],i[LBDAT],i[LBTIM],i[LBORRES]]
+>>>>>>> Stashed changes
             if i[sub] in serologyDict:
                 if hh in serologyDict.get(i[sub]):
                     continue

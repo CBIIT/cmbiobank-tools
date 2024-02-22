@@ -1,7 +1,12 @@
 import os,csv
 
+<<<<<<< Updated upstream
 os.chdir("/Users/mohandasa2/Desktop/dbGap Data/Submission-V2/RAVE")
 entity=open("entity_ids.20230227.csv",'r')
+=======
+os.chdir("/Users/mohandasa2/Desktop/dbGap Data")
+entity=open("entity_ids.20211010.csv",'r')
+>>>>>>> Stashed changes
 offstudy=open("Off Study.csv",'r')
 output=open("Off Study-output.txt",'w')
 offstudyfh=csv.reader(offstudy)
@@ -36,8 +41,13 @@ for x in entityfh:
 
 
 #Searching in CMB Off Study file to get the data
+<<<<<<< Updated upstream
 os.chdir("/Users/mohandasa2/Desktop/dbGap Data/Submission-V2/RAVE")
 inter = open("off_study.CSV", 'r')
+=======
+os.chdir("/Users/mohandasa2/Desktop/dbGap Data/RAVE")
+inter = open("CMB_off_study.CSV", 'r')
+>>>>>>> Stashed changes
 interfh = csv.reader(inter)
 offstudyDict={}
 for i in interfh:
@@ -47,7 +57,11 @@ for i in interfh:
                 sub=col
             elif i[col]=="RecordActive":
                 RecordActive=col
+<<<<<<< Updated upstream
             elif i[col]=="DSSTDAT_RAW":
+=======
+            elif i[col]=="DSSTDAT":
+>>>>>>> Stashed changes
                 DSSTDAT=col
             elif i[col] == "DSDECOD_OS":
                 DSDECOD_OS = col
@@ -65,8 +79,12 @@ for i in interfh:
                 MRCNSTNY = col
 
     else:
+<<<<<<< Updated upstream
         vv=i[sub].split("-")
         if i[RecordActive]=='0' or vv[1] >"0125":
+=======
+        if i[RecordActive]=='0':
+>>>>>>> Stashed changes
             continue
         else:
             hh=[i[DSSTDAT],i[DSDECOD_OS],i[DSTERM_OTH_OS],i[BESTRESP],i[RSDAT_X1],i[RSDAT_X2],i[STORCNSTNY],i[MRCNSTNY]]
@@ -101,9 +119,12 @@ for con in offstudyfh:
                         output.write(t + "\t" + hhh + "\t" + "\t".join(each) + "\n")
             else:
                 output.write(t + "\t" + hhh + "\t" + "-"+"\t" + "-"+"\t" + "-"+"\t" + "-"+ "-"+"\t" + "-"+"\t" + "-"+"\t" + "-"+ "\n")
+<<<<<<< Updated upstream
         else:
             output.write(t + "\t" + hhh + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\n")
 
 
+=======
+>>>>>>> Stashed changes
 
 

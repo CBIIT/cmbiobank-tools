@@ -45,7 +45,11 @@ for x in Fout:
         for every in range(0,len(x)):
             if x[every]=="Sub Specimen ID":
                 ID=every
+<<<<<<< Updated upstream
         output.write("\t".join(x) + "\t" + "Shipped to VARI" +"\t"+"Specimen adequacy when received at VARI"+"\t"+"Reason for inadequacy"+ "\n")
+=======
+        output.write("\t".join(x) + "\t" + "Shipped to VARI" +"\t"+"Specimen inadequacy when received at VARI"+"\t"+"Reason for inadequacy"+ "\n")
+>>>>>>> Stashed changes
     else:
             if x[ID] in receiving:
                 output.write("\t".join(x)+"\t"+"\t".join(receiving.get(x[ID]))+"\n")

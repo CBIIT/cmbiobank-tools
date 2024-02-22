@@ -1,7 +1,12 @@
 import os,csv
 
+<<<<<<< Updated upstream
 os.chdir("/Users/mohandasa2/Desktop/dbGap Data/Submission-V2/RAVE")
 entity=open("entity_ids.20230227.csv",'r')
+=======
+os.chdir("/Users/mohandasa2/Desktop/dbGap Data")
+entity=open("entity_ids.20211010.csv",'r')
+>>>>>>> Stashed changes
 serumE=open("Serum Electrophoresis.csv",'r')
 output=open("Serum Electrophoresis-output.txt",'w')
 serumEfh=csv.reader(serumE)
@@ -36,8 +41,13 @@ for x in entityfh:
 
 
 #Searching in CMB Serum Electrophoresis file to get the data
+<<<<<<< Updated upstream
 os.chdir("/Users/mohandasa2/Desktop/dbGap Data/Submission-V2/RAVE")
 inter = open("serum_electrophoresis.CSV", 'r')
+=======
+os.chdir("/Users/mohandasa2/Desktop/dbGap Data/RAVE")
+inter = open("CMB_serum_electrophoresis.CSV", 'r')
+>>>>>>> Stashed changes
 interfh = csv.reader(inter)
 SerumEDict={}
 for i in interfh:
@@ -47,7 +57,11 @@ for i in interfh:
                 sub=col
             elif i[col]=="RecordActive":
                 RecordActive=col
+<<<<<<< Updated upstream
             elif i[col]=="LBDAT_RAW":
+=======
+            elif i[col]=="LBDAT":
+>>>>>>> Stashed changes
                 LBDAT=col
             elif i[col] == "LBTIM":
                 LBTIM = col
@@ -73,8 +87,12 @@ for i in interfh:
                 LBORRES_BJPROT = col
 
     else:
+<<<<<<< Updated upstream
         vv=i[sub].split("-")
         if i[RecordActive]=='0' or vv[1]>"0125":
+=======
+        if i[RecordActive]=='0':
+>>>>>>> Stashed changes
             continue
         else:
             hh=[i[LBDAT],i[LBTIM],i[LBORRES_IGA],i[LBORRES_IGD],i[LBORRES_IGE],i[LBORRES_IGG],i[LBORRES_IGM],i[LBORRES_MCPROT],i[LBORRES_PCPROT],i[LBORRES_KAPPALC],i[LBORRES_LMBDLC],i[LBORRES_BJPROT]]
@@ -109,8 +127,11 @@ for con in serumEfh:
                         output.write(t + "\t" + hhh + "\t" + "\t".join(each) + "\n")
             else:
                 output.write(t + "\t" + hhh + "\t" + "-"+"\t" + "-"+"\t" + "-"+"\t" + "-"+"\t"+ "-"+"\t" + "-"+"\t" + "-"+"\t" + "-"+"\t" + "-"+"\t" + "-"+"\t" + "-"+"\t" + "-"+"\t" +"\n")
+<<<<<<< Updated upstream
         else:
             output.write(t + "\t" + hhh + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "\n")
 
+=======
+>>>>>>> Stashed changes
 
 

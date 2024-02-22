@@ -1,7 +1,12 @@
 import os,csv
 
+<<<<<<< Updated upstream
 os.chdir("/Users/mohandasa2/Desktop/dbGap Data/Submission-V2/RAVE")
 entity=open("entity_ids.20230227.csv",'r')
+=======
+os.chdir("/Users/mohandasa2/Desktop/dbGap Data")
+entity=open("entity_ids.20211010.csv",'r')
+>>>>>>> Stashed changes
 socio=open("Social & Environmental Factors.csv",'r')
 output=open("Social-Environmental-Factors-output.txt",'w')
 sociofh=csv.reader(socio)
@@ -36,8 +41,13 @@ for x in entityfh:
 
 
 #Searching in CMB Social and Environmental Factors  file to get the data
+<<<<<<< Updated upstream
 os.chdir("/Users/mohandasa2/Desktop/dbGap Data/Submission-V2/RAVE")
 Envio = open("social_and_environmental_factors.CSV", 'r')
+=======
+os.chdir("/Users/mohandasa2/Desktop/dbGap Data/RAVE")
+Envio = open("CMB_social_and_environmental_factors.CSV", 'r')
+>>>>>>> Stashed changes
 Enviofh = csv.reader(Envio)
 SocialDict={}
 for i in Enviofh:
@@ -83,6 +93,7 @@ for i in Enviofh:
                 ERTERM05 = col
             elif i[col] == "RecordActive":
                 RecordActive = col
+<<<<<<< Updated upstream
             elif i[col] == "EDULVL_SCORRES":
                 EDULVL_SCORRES = col
 
@@ -92,6 +103,14 @@ for i in Enviofh:
             continue
         else:
             hh=[i[SMOKING_SUNCF],i[SMOKE_SUSTAGE],i[SMOKE_SUENAGE],i[SMOK_PK_YR_NUM],i[SMOKE_SUDOSE],i[SMOKE_SUDUR],i[SECHAND_SUOCCUR],i[SU_SUSCAT_SPD_SECHAND],i[ALCOHOL_SUNCF],i[ALCOHOL_SUDUR],i[EROCCUR],i[ERTERM01],i[ERTERM02],i[ERTERM03],i[ERTERM04],i[ERTERM05],i[EMPJOB_SCORRES],i[INCMLVL_SCORRES],i[EDULVL_SCORRES]]
+=======
+
+    else:
+        if i[RecordActive]=='0':
+            continue
+        else:
+            hh=[i[SMOKING_SUNCF],i[SMOKE_SUSTAGE],i[SMOKE_SUENAGE],i[SMOK_PK_YR_NUM],i[SMOKE_SUDOSE],i[SMOKE_SUDUR],i[SECHAND_SUOCCUR],i[SU_SUSCAT_SPD_SECHAND],i[ALCOHOL_SUNCF],i[ALCOHOL_SUDUR],i[EROCCUR],i[EMPJOB_SCORRES],i[INCMLVL_SCORRES],i[ERTERM01],i[ERTERM02],i[ERTERM03],i[ERTERM04],i[ERTERM05]]
+>>>>>>> Stashed changes
             if i[sub] in SocialDict:
                 if hh in SocialDict.get(i[sub]):
                     continue
@@ -118,15 +137,22 @@ for con in sociofh:
             # print(hhh,type(hhh))
             if hhh in SocialDict:
                 if len(SocialDict.get(hhh)) == 1:
+<<<<<<< Updated upstream
                     # print (t, enrollDic.get(t), SocialDict.get(hhh),           'pppp')
+=======
+                    print (t, enrollDic.get(t), SocialDict.get(hhh),           'pppp')
+>>>>>>> Stashed changes
                     output.write(t + "\t" + hhh + "\t" + "\t".join(SocialDict.get(hhh)[0]) + "\n")
                 else:
                     for each in SocialDict.get(hhh):
                         output.write(t + "\t" + hhh + "\t" + "\t".join(each) + "\n")
             else:
                 output.write(t + "\t" + hhh + "\t" + "-"+"\t" + "-"+"\t" + "-"+"\t" + "-"+"\t" + "-"+"\t" + "-"+"\t" + "-"+"\t" + "-"+"\t" + "-"+"\t" + "-"+ "\n")
+<<<<<<< Updated upstream
         else:
             output.write(t + "\t" + hhh + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\n")
 
+=======
+>>>>>>> Stashed changes
 
 

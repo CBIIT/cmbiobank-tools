@@ -1,4 +1,4 @@
-#!/usr/bin/env -S Rscript --no-init-file --slave
+#!/usr/bin/env -S Rscript --verbose --no-init-file --slave
 suppressPackageStartupMessages(library(tidyverse))
 suppressPackageStartupMessages(library(stringr))
 suppressPackageStartupMessages(library(lubridate))
@@ -9,24 +9,6 @@ options(error = traceback)
 ## default common columns (denormalized across tables coming from Rave)
 com_cols_default <- c("project", "subjectId", "Subject", "siteid", "Site","SiteNumber")
 
-## default tables desired
-xtbls_default <- c("specimen_tracking_enrollment","enrollment","blood_collection_adverse_even","blood_collection_adverse_eve2","biopsy_adverse_event_presence","biopsy_adverse_events","histology_and_disease","specimen_transmittal","biopsy_pathology_verification","oncomine_result","shipping_status","prior__treatment_summary","intervening_therapy","targeted_therapy_administrati")
-
-## default columns desired
-
-## features
-## if a public id transform table is provided, output public pt,spec,subspec IDs
-##   and suppress the internal ids
-## configure by providing (via a config.yml file):
-##  - a list (single column text file) of column ids desired in output
-##  - a list of tables desired in output
-##  - an RDS version of 10323 term table 
-##  - defaults based on Laura's requirements
-## report tables with zero rows -
-##  - particularly the adverse events tables
-## auto-determine the subject-oriented and specimen-oriented tables (using columns)?
-## attempt to automate (or specify in config) joins
-
 tday <- suppressMessages(stamp("28 Feb 1956"))(today())
 lddta <- function(dtadir, nms=NULL) {
     files <<- list.files(dtadir) %>% grep(".*CSV", x=., value=T)
@@ -34,7 +16,14 @@ lddta <- function(dtadir, nms=NULL) {
         files <- grep(nms, files, value=T)
     }
     tbls  <- (files %>% str_match("^[A-Z_]*(.*)[.].*$"))[,2]
-    dta  <-  map(files, function (x) tibble(read_csv(file.path(dtadir,x)))) 
+    dta  <-  map(files, function (x) {
+        y <- read_csv(file.path(dtadir,x))
+        if (nrow(problems(y))) {
+            print(dtadir,fo=stderr)
+            print(x,fo=stderr)
+            print(problems(y),fo=stderr,n=Inf,width=Inf)
+        }
+        tibble(y) })
     names(dta) <- tbls
     dta
 }
@@ -65,8 +54,6 @@ oparser <- OptionParser(
 
 opts <- parse_args2(oparser)
 
-## param checking - can do better than this
-#stopifnot(!is.na(opts$args[1]) && dir.exists(opts$args[1]))
 if (is.null(opts$options$config) ) {
     opts$options$config  <- "config.yml"
 }
@@ -93,6 +80,7 @@ if (is.null(opts$options$bcr_file) | (opts$options$bcr_file == "NONE")) {
         bcr_report  <- NULL
     } else {
         bcr_report  <- read_excel(opts$options$bcr_file)
+        problems()
         ## Check for non rave "original id" and purge - caused issue at 03/28/2022 run
         bcr_report <- bcr_report %>% filter( grepl("^10323",`Original Id`) )
     }
@@ -112,6 +100,14 @@ if (is.null(opts$options$bcr_slide_file_dir) | (opts$options$bcr_slide_file_dir 
                           bind_rows(
                               read_excel(file.path(opts$options$bcr_slide_file_dir,f)))
         bcr_slides <- bcr_slides %>% unique()
+        # check for missing data in file name column
+        missing  <- bcr_slides %>% dplyr::filter( is.na(`Image File Name`)  | is.null(`Image File Name`) )
+        if (nrow(missing)) {
+            warning(str_interp("BCR slide files in '${opts$options$bcr_slide_file_dir}' have missing data\n"),
+                    immediate.=TRUE)
+            missing
+        }
+        
     }
 }
 
@@ -187,4 +183,5 @@ if( !is.null(config$output) ) {
         }
     }
 }
+
 

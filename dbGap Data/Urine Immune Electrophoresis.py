@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 import os,csv
 
 os.chdir("/Users/mohandasa2/Desktop/dbGap Data/Submission-V2/RAVE")
@@ -112,3 +113,6 @@ for con in urinefh:
             output.write(t + "\t" + hhh + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\n")
 
 
+=======
+####### NO Data in the columns selected so the code is not written but check the CMB Rave file for this file ##########
+>>>>>>> Stashed changes

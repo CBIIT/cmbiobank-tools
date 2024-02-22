@@ -1,7 +1,11 @@
 import os,csv
 
 os.chdir("/Users/mohandasa2/Desktop/dbGap Data")
+<<<<<<< Updated upstream
 entity=open("entity_ids.20211206.csv",'r')
+=======
+entity=open("entity_ids.20211010.csv",'r')
+>>>>>>> Stashed changes
 baseline=open("Intervening Therapy.csv",'r')
 output=open("Intervening Therapy-output.txt",'w')
 baselinefh=csv.reader(baseline)

@@ -1,7 +1,12 @@
 import os,csv
 
+<<<<<<< Updated upstream
 os.chdir("/Users/mohandasa2/Desktop/dbGap Data/Submission-V2/RAVE")
 entity=open("entity_ids.20230227.csv",'r')
+=======
+os.chdir("/Users/mohandasa2/Desktop/dbGap Data")
+entity=open("entity_ids.20211010.csv",'r')
+>>>>>>> Stashed changes
 offtreat=open("Off Treatment.csv",'r')
 output=open("Off Treatment-output.txt",'w')
 offtreatfh=csv.reader(offtreat)
@@ -36,8 +41,13 @@ for x in entityfh:
 
 
 #Searching in CMB Off Treatment file to get the data
+<<<<<<< Updated upstream
 os.chdir("/Users/mohandasa2/Desktop/dbGap Data/Submission-V2/RAVE")
 inter = open("off_treatment.CSV", 'r')
+=======
+os.chdir("/Users/mohandasa2/Desktop/dbGap Data/RAVE")
+inter = open("CMB_off_treatment.CSV", 'r')
+>>>>>>> Stashed changes
 interfh = csv.reader(inter)
 offTreatDict={}
 for i in interfh:
@@ -49,7 +59,11 @@ for i in interfh:
                 RecordActive=col
             elif i[col]=="TAC01":
                 TAC01=col
+<<<<<<< Updated upstream
             elif i[col] == "DSSTDAT_RAW":
+=======
+            elif i[col] == "DSSTDAT":
+>>>>>>> Stashed changes
                 DSSTDAT = col
             elif i[col] == "DSDECOD":
                 DSDECOD = col
@@ -57,9 +71,15 @@ for i in interfh:
                 DSTERM_OTH = col
             elif i[col] == "BESTRESP":
                 BESTRESP = col
+<<<<<<< Updated upstream
             elif i[col] == "RSDAT_X1_RAW":
                 RSDAT_X1 = col
             elif i[col] == "RSDAT_X2_RAW":
+=======
+            elif i[col] == "RSDAT_X1":
+                RSDAT_X1 = col
+            elif i[col] == "RSDAT_X2":
+>>>>>>> Stashed changes
                 RSDAT_X2 = col
             elif i[col] == "DSCONT":
                 DSCONT = col
@@ -67,8 +87,12 @@ for i in interfh:
                 DSCONT_FU = col
 
     else:
+<<<<<<< Updated upstream
         vv=i[sub].split("-")
         if i[RecordActive]=='0' or vv[1] >"0125":
+=======
+        if i[RecordActive]=='0':
+>>>>>>> Stashed changes
             continue
         else:
             hh=[i[TAC01],i[DSSTDAT],i[DSDECOD],i[DSTERM_OTH],i[BESTRESP],i[RSDAT_X1],i[RSDAT_X2],i[DSCONT],i[DSCONT_FU]]
@@ -104,9 +128,12 @@ for con in offtreatfh:
             else:
                 output.write(t + "\t" + hhh + "\t" + "-"+"\t" + "-"+"\t" + "-"+"\t" + "-"+ "-"+"\t" + "-"+"\t" + "-"+"\t" + "-"+ "\n")
 
+<<<<<<< Updated upstream
         else:
             output.write(t + "\t" + hhh + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "-" + "\t" + "-" + "\t" + "-" + "\t" + "-" + "\n")
 
 
 
+=======
+>>>>>>> Stashed changes
 

@@ -1,7 +1,11 @@
 import os,csv
 
 os.chdir("/Users/mohandasa2/Desktop/dbGap Data")
+<<<<<<< Updated upstream
 entity=open("entity_ids.20211206.csv",'r')
+=======
+entity=open("entity_ids.20211010.csv",'r')
+>>>>>>> Stashed changes
 transfusion=open("Transfusion.csv",'r')
 output=open("Transfusion-output.txt",'w')
 transfusionfh=csv.reader(transfusion)
@@ -45,8 +49,11 @@ for i in interfh:
         for col in range(0,len(i)):
             if i[col]=="Subject":
                 sub=col
+<<<<<<< Updated upstream
             elif i[col]=="RecordPosition":
                 RecordPosition=col
+=======
+>>>>>>> Stashed changes
             elif i[col]=="RecordActive":
                 RecordActive=col
             elif i[col]=="CMSTDAT":
@@ -63,7 +70,11 @@ for i in interfh:
         if i[RecordActive]=='0':
             continue
         else:
+<<<<<<< Updated upstream
             hh=[i[RecordPosition],i[CMSTDAT],i[CMSTTIM],i[CMTRT_TRANSF],i[CMDOSTXT_TRANSF]]
+=======
+            hh=[i[CMSTDAT],i[CMSTTIM],i[CMTRT_TRANSF],i[CMDOSTXT_TRANSF]]
+>>>>>>> Stashed changes
             if i[sub] in transfusionDict:
                 if hh in transfusionDict.get(i[sub]):
                     continue
