@@ -372,6 +372,9 @@ strategies <- list(
         slide_mapping
     },
     tcia_metadata = function(pull_date) {
+        need_files()
+        need_bcr_report()
+        need_bcr_slides()
         ## what we're doing here:
         ## we have the information for the slide subspecimens in 'slides'
         ## now we just want to add *specimen* metadata across the subspecimens in slides
@@ -410,8 +413,8 @@ strategies <- list(
                    MHTERM_DIAGNOSIS,
                    RecordPosition) %>% unique %>%
             inner_join(dta$specimen_tracking_enrollment %>%
-                       select(rave_spec_id,ASMTTPT_STD),
-                       by = c("MIREFID" = "rave_spec_id")) %>%
+                       select(SPECID_DRV,ASMTTPT_STD),
+                       by = c("MIREFID" = "SPECID_DRV")) %>%
             unique
         
         slides <-  bcr_report %>%
@@ -475,6 +478,96 @@ strategies <- list(
                                    RecordPosition ) %>%
             select(-RecordPosition)
         ret
+    },
+    idc_slide_data = function(pull_date) {
+        ## create one minimal excel (worksheets 1,2,3,8, only columns that have data)
+        ## per disease type (collection)
+        ## use the slide_table function strategy to reduce VARI info
+        coll_tbl  <- tibble(
+            study_name = c("Cancer Moonshot Biobank"),
+            study_acronym = c("CMB"),
+            cancer_type = c(NA),
+            collection = c(NA),
+            number_of_participants = c(0),
+            deidentification_method_type = c("manual"),
+            deidentification_method_description = c("TCIA pathology de-identification SOP"),
+            license = c("CC BY 4.0    https://creativecommons.org/licenses/by/4.0/"),
+            citation_or_DOI = c(""),
+            phs_accession = c("phs002192"),
+            acl = c("open"),
+            role_or_affiliation = c("Principal Investigator"),
+            first_name = c("Helen"),
+            last_name = c("Moore"),
+            suffix = c("PhD"),
+            email = c("helen.moore@nih.gov"),
+            )
+        tcia_tbl <- strategies$tcia_metadata(pull_date) 
+        idc_tbl   <- tcia_tbl %>%
+            rename(c(
+                "participant_id" = "pub_id",
+                "gender" = "Gender",
+                "race" = "Race",
+                "ethnicity" = "Ethnicity",
+                "primary_diagnosis" = "Topographic_Site",
+                "sample_id" = "pub_subspec_id",
+                "file_name" = "Filename",
+                "collection" = "TCIA_Collection"
+                )) %>%
+            mutate(
+                dbGaP_subject_id = participant_id,
+                participant_ID = participant_id,
+                file_format = c("SVS"),
+                image_modality = c("SM"),
+                imaging_equipment_manufacturer = c("Aperio"),
+                imaging_equipment_model = c("AT2"),
+                embedding_medium = c("Paraffin wax")
+            ) %>%
+            select(
+                collection, participant_id, gender, race, ethnicity, primary_diagnosis, sample_id,
+                dbGaP_subject_id, participant_ID, file_name, file_format, image_modality,
+                imaging_equipment_manufacturer, imaging_equipment_model,
+                embedding_medium
+                )
+        inventory  <- entity_ids %>% dplyr::filter( !is.na(pub_subspec_id) ) %>%
+           inner_join(bcr_report, by = c("bcr_subspec_id" = "BSI ID")) %>%
+            select(
+                participant_id = pub_id,
+                sample_id = pub_subspec_id,
+                bcr_subspec_id,
+                parent_id = `Parent ID`,
+                organ_or_tissue = `Anatomic Site`,
+                material_type = `Material Type`,
+                tumor_tissue_type = `Tissue Type`,
+                tissue_fixative = `Fixative or Additive`,
+                collection_event = `Collection Event Name`
+                ) %>%
+            mutate(
+                staining_method = if_else(grepl("H&E",material_type),"Hematoxylin and Eosin Staining Method","")) %>%
+            mutate(
+                staining_method = if_else(grepl("W-G",material_type), "Wright-Giemsa Staining Method",staining_method))         %>%
+            mutate(
+                staining_method = if_else(grepl("Unstained",material_type), "Unstained",staining_method))             
+        ## now obtain the parent material of slides
+        idc_data  <- idc_tbl %>%
+            inner_join(inventory, by = c("sample_id")) %>%
+            left_join(inventory %>%
+                      select(bcr_subspec_id, material_type),
+                      by = c("parent_id" = "bcr_subspec_id")) %>%
+            rename(
+                participant_id = participant_id.x,
+                material_type = material_type.x,
+                sample_type = material_type.y
+                ) %>%
+            select( -parent_id, -bcr_subspec_id, -participant_id.y )
+        ## add template worksheet and column locations
+        idc_mapping  <- read_excel("icd-bb-mapping-2023-10-09.xlsx")
+        loc <- names(idc_data) %>% map_chr(function (s) { x <-idc_mapping %>% filter(`Field`== s ) %>% select(Worksheet, Column) ; str_c(x$Worksheet[1], x$Column[1]) })
+        loc  <-  data.frame(t(loc))
+        names(loc) <- names(idc_data)
+        idc_data <- idc_data %>% add_row(loc[1,],.before=1)
+        ## now order the columns according to location
+        idc_data <- idc_data  %>% select( names(idc_data[1,order(idc_data[1,])]) )
+        
     }
 )
 

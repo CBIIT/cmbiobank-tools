@@ -86,11 +86,13 @@ def _get_dme_rave_folders(conf):
     folders = {}
     for p in obj_paths:
         p = Path(p)
-        folder = re.match(".*RAVE/([0-9]+)/", str(p)).group(1)
-        if folder in folders:
-            folders[folder].append(p.name)
-        else:
-            folders[folder] = [p.name]
+        folder = re.match(".*RAVE/([0-9]+)/", str(p))
+        if folder:
+            folder = folder.group(1)
+            if folder in folders:
+                folders[folder].append(p.name)
+            else:
+                folders[folder] = [p.name]
     return folders
 
     
