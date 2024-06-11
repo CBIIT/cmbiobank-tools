@@ -1,6 +1,6 @@
 import os
 os.chdir("/Users/mohandasa2/Desktop/Laura-study/Therapy")
-ther=open("FilteredNontargeted-therapy.txt",'r')
+ther=open("StandarNamesNon-Targeted.txt",'r')
 outputfinal=open("Non-TargetedTherapyUnique.txt",'w')
 
 for i in ther:

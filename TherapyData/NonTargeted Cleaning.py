@@ -27,7 +27,7 @@ with open("NonTargeted-file.txt",'r') as f:
 		wordsFiltered = []
 		for w in doc:
 			if w not in stop_words:
-				s=w.replace("-","").replace("FOLFOX6","FOLFOX").replace("CyD","Cyclophosphamide-dexamethasone").replace("Zoledronic","Zoledronic Acid").replace("Liver","Liver SBRT").replace("mFOLFOX","FOLFOX").replace("Auto","Auto stem cell transplant").replace("autologous","Auto stem cell transplant").replace("ASCT","Auto stem cell transplant").replace("Folfox","FOLFOX").replace("Folfiri","FOLFIRI")
+				s=w.replace("-","").replace("FOLFOX6","FOLFOX").replace("CyD","Cyclophosphamide-dexamethasone").replace("Zoledronic","Zoledronic Acid").replace("Liver","Liver SBRT").replace("mFOLFOX","FOLFOX").replace("Auto","Auto stem cell transplant").replace("autologous","Auto stem cell transplant").replace("ASCT","Auto stem cell transplant").replace("Folfox","FOLFOX").replace("Folfiri","FOLFIRI").replace("Trifluridine-Tipiracil","trifluridine/tipiracil")
 				wordsFiltered.append(s)
 				if w in filterednonDrug:
 					continue
