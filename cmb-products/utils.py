@@ -46,10 +46,31 @@ def rave2dme(dumpdir, folder, conf, desc=None, stage_dir=None, dry_run=False):
     return rc
 
 
-def _get_dme_rave_folders(conf):
-    """Return the names of available RAVE run folders and files."""
+def _dme_query_dataobject(conf, query, dme_path):
     DME_ENV = conf['envs']['DME_ENV']
     DME_ENV['PATH'] = ":".join([DME_ENV['PATH'],os.environ['PATH']])
+    obj_paths = []
+    done = False
+    while not done:
+        q_tfp = tempfile.NamedTemporaryFile("w+")
+        json.dump(query, q_tfp)
+        q_tfp.seek(0)
+        cmd = ["dm_query_dataobject", q_tfp.name, dme_path]
+        rc = run(cmd, capture_output=True, env=DME_ENV)
+        if rc.returncode != 0:
+            logger.error("DME query failed: {}".format(rc.stderr))
+            return None
+        out = json.loads(rc.stdout)
+        obj_paths.extend(out['dataObjectPaths'])
+        if out['totalCount'] <= len(obj_paths):
+            done = True
+        else:
+            query["page"] += 1 
+    return obj_paths
+
+
+def _get_dme_rave_folders(conf):
+    """Return the names of available RAVE run folders and files."""
     DME_RAVE_path = Path(conf['paths']['DME_RAVE_path'])
     query = {
         "detailedResponse": False,
@@ -66,23 +87,7 @@ def _get_dme_rave_folders(conf):
         "page": 1,
         "totalCount": True,
     }
-    obj_paths = []
-    done = False
-    while not done:
-        q_tfp = tempfile.NamedTemporaryFile("w+")
-        json.dump(query, q_tfp)
-        q_tfp.seek(0)
-        cmd = ["dm_query_dataobject", q_tfp.name, DME_RAVE_path]
-        rc = run(cmd, capture_output=True, env=DME_ENV)
-        if rc.returncode != 0:
-            logger.error("DME query for folders failed: {}".format(rc.stderr))
-            return None
-        out = json.loads(rc.stdout)
-        obj_paths.extend(out['dataObjectPaths'])
-        if out['totalCount'] <= len(obj_paths):
-            done = True
-        else:
-            query["page"] += 1 
+    obj_paths = _dme_query_dataobject(conf, query, DME_RAVE_path);
     folders = {}
     for p in obj_paths:
         p = Path(p)
@@ -95,7 +100,46 @@ def _get_dme_rave_folders(conf):
                 folders[folder] = [p.name]
     return folders
 
-    
+
+def _get_dme_genomic_data(conf):
+    """Return the names of Oncomine genomic reports and VCFs present at DME."""
+    DME_Genomic_path = Path(conf['paths']['DME_Genomic_path'])
+    DME_VCF_path =  Path(conf['paths']['DME_VCF_path'])
+    query = {
+        "detailedResponse": False,
+        "compoundQuery": {
+            "operator": "AND",
+            "queries": [
+                {
+	            "attribute":"collection_type",
+	            "value": "Report",
+	            "operator": "EQUAL"
+                },
+            ]
+        },
+        "page": 1,
+        "totalCount": True,
+    }
+    pdf_paths = _dme_query_dataobject(conf, query, DME_Genomic_path)
+    query = {
+        "detailedResponse": False,
+        "compoundQuery": {
+            "operator": "AND",
+            "queries": [
+                {
+	            "attribute":"collection_type",
+	            "value": "Molecular",
+	            "operator": "EQUAL"
+                },
+            ]
+        },
+        "page": 1,
+        "totalCount": True,
+    }
+    vcf_paths = _dme_query_dataobject(conf, query, DME_VCF_path)
+    pdf_paths.extend(vcf_paths)
+    return sorted(pdf_paths)
+
 
 def _file2dme(file_pth, dest, metadata, conf, stage_dir=None, dry_run=False):
     """file_pth, dest: pathlib.Path objects"""
