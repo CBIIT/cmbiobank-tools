@@ -16,5 +16,5 @@ XlsxWriter = ">=3.0.2"
 pyexcel = ">=0.6.7"
 
 [tool.poetry.scripts]
-cmb_products = 'cmb_products.bin.cmb_products:main'
-cmb2dme = 'cmb_products.bin.cmb2dme:main'
+cmb_products = 'cmb_products.bin.cmb_products:do'
+cmb2dme = 'cmb_products.bin.cmb2dme:do'
