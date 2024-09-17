@@ -6,8 +6,8 @@ import difflib
 import re
 import time
 from pathlib import Path
-import file_series as fs
-import utils
+import cmb_products.file_series as fs
+import cmb_products.utils as utils
 from yaml import CLoader as loader
 from pdb import set_trace
 
@@ -91,7 +91,7 @@ for i in range(0,len(audits)-1):
     key = audits.series[i][0].strftime("%Y%m%d")
     if key not in manifests:
         manifests[key] = {"dumps":[], "inventories":[]}
-    for line in [x for x in dif if re.match("^\+",x)]:
+    for line in [x for x in dif if re.match("^[+]",x)]:
         line = line.rstrip().lstrip("+ ")
         if re.match("^#",line):
             continue
@@ -124,6 +124,7 @@ def look(x,y):
     if found:
         logger.debug("File '{}' already present in DME".format(x))
     return found
+
 
 for m in manifests:
     if m not in dme_folders:

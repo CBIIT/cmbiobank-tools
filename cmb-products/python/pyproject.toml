@@ -1,0 +1,20 @@
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "cmb-products"
+version = "0.0.1"
+authors = ["Mark A. Jensen <mark.jensen@nih.gov>"]
+description = "automate creation of Moonshot Biobank data products"
+include = ["conf","src"]
+
+[tool.poetry.dependencies]
+python = ">=3.8"
+PyYAML = ">=5.1.1"
+XlsxWriter = ">=3.0.2"
+pyexcel = ">=0.6.7"
+
+[tool.poetry.scripts]
+cmb_products = 'cmb_products.bin.cmb_products:main'
+cmb2dme = 'cmb_products.bin.cmb2dme:main'

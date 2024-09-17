@@ -6,8 +6,8 @@ import argparse
 import datetime
 import yaml
 from pathlib import Path
-import file_series as fs
-import utils
+import cmb_products.file_series as fs
+import cmb_products.utils as utils
 from yaml import CLoader as loader
 from pdb import set_trace
 
