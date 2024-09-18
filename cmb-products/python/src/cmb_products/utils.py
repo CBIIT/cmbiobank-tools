@@ -187,10 +187,17 @@ def run_rave_reduce(strategy, optdict, dumpdir, rr,
     logger.debug("cmd: {}".format(" ".join(cmd)))
     if not dry_run:
         try:
-            run(cmd, capture_output=True, cwd=stage_dir, check=True)
+            res = run(cmd, capture_output=True, cwd=stage_dir, check=True)
+            if re.match(b".*bad_weak_ptr", res.stderr, re.S):
+                logger.warn("On run {}\n bad_weak_ptr error".format(cmd))
+            elif re.match(b".*Error", res.stderr, re.S):
+                raise subprocess.CalledProcessError(cmd=cmd,
+                                                    returncode=999,
+                                                    output=res.stdout,
+                                                    stderr=res.stderr)
         except subprocess.CalledProcessError as e:
             logger.error("On run: {}\nR stderr:\n {}\nR stdout:\n {}".format(
-                " ".join(cmd), e.stderr, e.stdout))
+                " ".join(cmd), e.stderr, e.output))
             raise e
         logger.debug("Rename rave-reduce output from {} to {}".format(outnm, newnm))
         (stage_dir / Path(outnm)).rename( stage_dir / Path(newnm) )
