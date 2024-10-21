@@ -18,3 +18,4 @@ pyexcel = ">=0.6.7"
 [tool.poetry.scripts]
 cmb_products = 'cmb_products.bin.cmb_products:do'
 cmb2dme = 'cmb_products.bin.cmb2dme:do'
+files_at_dme = 'cmb_products.bin.files_at_dme:do'

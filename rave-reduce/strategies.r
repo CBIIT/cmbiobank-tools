@@ -393,13 +393,14 @@ strategies <- list(
             select( Subject, matches("RACE_.*_STD"),ETHNIC_STD,
                    CTEP_SDC_MED_V10_CD, MHLOC_STD, AGE,
                    SEX_STD, GENDER_STD, DSSTDAT_ENROLLMENT ) %>%
-            mutate( RACE = str_c(str_replace_na(RACE_01_STD,""),
-                                 str_replace_na(RACE_02_STD,""),
-                                 str_replace_na(RACE_03_STD,""),
-                                 str_replace_na(RACE_04_STD,""),
-                                 str_replace_na(RACE_05_STD,""),
-                                 str_replace_na(RACE_06_STD,""),
-                                 str_replace_na(RACE_07_STD,"")) ) %>%
+            mutate( RACE = str_squish(
+                        str_c(str_replace_na(RACE_01_STD,""),
+                              str_replace_na(RACE_02_STD,""),
+                              str_replace_na(RACE_03_STD,""),
+                              str_replace_na(RACE_04_STD,""),
+                              str_replace_na(RACE_05_STD,""),
+                              str_replace_na(RACE_06_STD,""),
+                              str_replace_na(RACE_07_STD,""),sep=" ") )) %>%
             mutate( DATE_OF_ENROLLMENT = dmy_hms(DSSTDAT_ENROLLMENT) ) %>%
             select( -matches("RACE_.*") ) %>%
             select( -DSSTDAT_ENROLLMENT ) %>%
@@ -409,6 +410,9 @@ strategies <- list(
             dplyr::filter(RecordActive == 1) %>%
             select(MIREFID,
                    SPLADQFL_X1_STD,
+
+
+
                    MIORRES_TUCONT_X1_STD,MIORRES_TUCONT_X2_STD,
                    MHTERM_DIAGNOSIS,
                    RecordPosition) %>% unique %>%
@@ -428,6 +432,9 @@ strategies <- list(
                        by = c("BSI ID"="bcr_subspec_id","Subject ID"="ctep_id")) %>%
                                         #separate(`BSI ID`, into=c("bsi_pfx","bsi_suf"), remove=F) %>%
                                         #select(-bsi_suf)
+
+
+
             unique
         
         datascope <- slides %>%
@@ -469,7 +476,7 @@ strategies <- list(
         ret  <- datascope %>%
             inner_join( slide_tbl %>%
                         select(pub_subspec_id, filename) ) %>%
-            dplyr::filter( !is.na(filename) ) %>%
+            ## dplyr::filter( !is.na(filename) ) %>%
             rename( "Filename" = "filename" )
         ## remove extra records associated with subspecimens - choose the latest rec
         ## (by RecordPosition) with the fewest NA entries
