@@ -46,10 +46,31 @@ def rave2dme(dumpdir, folder, conf, desc=None, stage_dir=None, dry_run=False):
     return rc
 
 
-def _get_dme_rave_folders(conf):
-    """Return the names of available RAVE run folders and files."""
+def _dme_query_dataobject(conf, query, dme_path):
     DME_ENV = conf['envs']['DME_ENV']
     DME_ENV['PATH'] = ":".join([DME_ENV['PATH'],os.environ['PATH']])
+    obj_paths = []
+    done = False
+    while not done:
+        q_tfp = tempfile.NamedTemporaryFile("w+")
+        json.dump(query, q_tfp)
+        q_tfp.seek(0)
+        cmd = ["dm_query_dataobject", q_tfp.name, dme_path]
+        rc = run(cmd, capture_output=True, env=DME_ENV)
+        if rc.returncode != 0:
+            logger.error("DME query failed: {}".format(rc.stderr))
+            return None
+        out = json.loads(rc.stdout)
+        obj_paths.extend(out['dataObjectPaths'])
+        if out['totalCount'] <= len(obj_paths):
+            done = True
+        else:
+            query["page"] += 1 
+    return obj_paths
+
+
+def _get_dme_rave_folders(conf):
+    """Return the names of available RAVE run folders and files."""
     DME_RAVE_path = Path(conf['paths']['DME_RAVE_path'])
     query = {
         "detailedResponse": False,
@@ -66,34 +87,59 @@ def _get_dme_rave_folders(conf):
         "page": 1,
         "totalCount": True,
     }
-    obj_paths = []
-    done = False
-    while not done:
-        q_tfp = tempfile.NamedTemporaryFile("w+")
-        json.dump(query, q_tfp)
-        q_tfp.seek(0)
-        cmd = ["dm_query_dataobject", q_tfp.name, DME_RAVE_path]
-        rc = run(cmd, capture_output=True, env=DME_ENV)
-        if rc.returncode != 0:
-            logger.error("DME query for folders failed: {}".format(rc.stderr))
-            return None
-        out = json.loads(rc.stdout)
-        obj_paths.extend(out['dataObjectPaths'])
-        if out['totalCount'] <= len(obj_paths):
-            done = True
-        else:
-            query["page"] += 1 
+    obj_paths = _dme_query_dataobject(conf, query, DME_RAVE_path);
     folders = {}
     for p in obj_paths:
         p = Path(p)
-        folder = re.match(".*RAVE/([0-9]+)/", str(p)).group(1)
-        if folder in folders:
-            folders[folder].append(p.name)
-        else:
-            folders[folder] = [p.name]
+        folder = re.match(".*RAVE/([0-9]+)/", str(p))
+        if folder:
+            folder = folder.group(1)
+            if folder in folders:
+                folders[folder].append(p.name)
+            else:
+                folders[folder] = [p.name]
     return folders
 
-    
+
+def _get_dme_genomic_data(conf):
+    """Return the names of Oncomine genomic reports and VCFs present at DME."""
+    DME_Genomic_path = Path(conf['paths']['DME_Genomic_path'])
+    DME_VCF_path =  Path(conf['paths']['DME_VCF_path'])
+    query = {
+        "detailedResponse": False,
+        "compoundQuery": {
+            "operator": "AND",
+            "queries": [
+                {
+	            "attribute":"collection_type",
+	            "value": "Report",
+	            "operator": "EQUAL"
+                },
+            ]
+        },
+        "page": 1,
+        "totalCount": True,
+    }
+    pdf_paths = _dme_query_dataobject(conf, query, DME_Genomic_path)
+    query = {
+        "detailedResponse": False,
+        "compoundQuery": {
+            "operator": "AND",
+            "queries": [
+                {
+	            "attribute":"collection_type",
+	            "value": "Molecular",
+	            "operator": "EQUAL"
+                },
+            ]
+        },
+        "page": 1,
+        "totalCount": True,
+    }
+    vcf_paths = _dme_query_dataobject(conf, query, DME_VCF_path)
+    pdf_paths.extend(vcf_paths)
+    return sorted(pdf_paths)
+
 
 def _file2dme(file_pth, dest, metadata, conf, stage_dir=None, dry_run=False):
     """file_pth, dest: pathlib.Path objects"""
@@ -141,10 +187,17 @@ def run_rave_reduce(strategy, optdict, dumpdir, rr,
     logger.debug("cmd: {}".format(" ".join(cmd)))
     if not dry_run:
         try:
-            run(cmd, capture_output=True, cwd=stage_dir, check=True)
+            res = run(cmd, capture_output=True, cwd=stage_dir, check=True)
+            if re.match(b".*bad_weak_ptr", res.stderr, re.S):
+                logger.warn("On run {}\n bad_weak_ptr error".format(cmd))
+            elif re.match(b".*Error", res.stderr, re.S):
+                raise subprocess.CalledProcessError(cmd=cmd,
+                                                    returncode=999,
+                                                    output=res.stdout,
+                                                    stderr=res.stderr)
         except subprocess.CalledProcessError as e:
             logger.error("On run: {}\nR stderr:\n {}\nR stdout:\n {}".format(
-                " ".join(cmd), e.stderr, e.stdout))
+                " ".join(cmd), e.stderr, e.output))
             raise e
         logger.debug("Rename rave-reduce output from {} to {}".format(outnm, newnm))
         (stage_dir / Path(outnm)).rename( stage_dir / Path(newnm) )

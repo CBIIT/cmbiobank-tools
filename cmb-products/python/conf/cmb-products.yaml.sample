@@ -1,0 +1,42 @@
+# base_path is appended to all relative paths in the config
+# if a path is absolute, it is used verbatim
+paths:
+  base_path: /your/top-level/absolute/path/here
+  distro_file:
+    cmb-dist-file
+  rave_reduce_r:
+    rave-reduce.r
+  rave_reduce_config:
+    config.yml
+  entity_id_source: >-
+    ids
+  rave_dump_source: >-
+    where/rave/dumps/are
+  vari_inventory_source: >-
+    where/vari/inventory/spreadsheets/are
+  vari_slide_data_source: >-
+    where/vari/slide/data/tables/are
+  ids_local: >-
+    ids
+  ids_dest: >-
+    where/we/put/ids/xlsx/files
+  ids_rds_dest: >-
+    where/we/put/ids/rds/files
+  theradex_dest: >-
+    where/we/share/with/theradex
+  tcia_dest: >-
+    where/we/share/with/tcia
+  tcia_local: >-
+    tcia
+  uams_dest: >-
+   where/we/share/with/uams/triad
+  uams_local: >-
+    uams
+  mocha_dest: >-
+    where/we/share/with/mocha/lab
+  iroc_local: >-
+    local/stage/area/for/iroc/registrations
+  
+  
+
+  
