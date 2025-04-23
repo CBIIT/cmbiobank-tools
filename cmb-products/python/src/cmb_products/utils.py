@@ -273,4 +273,6 @@ def cpy(p,tgt,dry_run=False):
     logger.debug("cmd: {}".format(cp))
     if not dry_run:
         os.popen(cp)
-    
+
+if __name__ == 'main':
+    pass
