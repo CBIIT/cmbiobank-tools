@@ -2,7 +2,7 @@ import os, csv
 from CatalogData import catalog
 
 os.chdir("/Users/mohandasa2/Desktop/CatalogData/RAVE")
-concomitamt=open("CMB_concomitant_and_prior_medications.CSV",'r')
+concomitamt=open("concomitant_and_prior_medications.CSV",'r')
 output=open("Concomitant_and_prior_medication.txt",'w')
 output.write("SubjectID" + "\t" + "CMTRT" + "\n")
 
@@ -24,15 +24,17 @@ for i in confh :
                 siteid = col
             elif i[col] == "Site":
                 Site = col
+            elif i[col] == "RecordActive":
+                RecordActive = col
             elif i[col] == "project":
                 proj = col
             else:
                 if i[col] == "SiteNumber":
                     SiteNum = col
     else:
-        search = i[proj] + "_" + i[subId] + "_" + i[sub] + "_" + i[siteid] + "_" + i[Site] + "_" + i[SiteNum]
-        v=[search,i[cmtrt]]
-        concomit.append(v)
+            search = i[proj] + "_" + i[subId] + "_" + i[sub] + "_" + i[siteid] + "_" + i[Site] + "_" + i[SiteNum]
+            v=[search,i[cmtrt]]
+            concomit.append(v)
 
 for l,h in catalog.items():
     for j in concomit:
