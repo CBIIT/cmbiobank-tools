@@ -53,7 +53,13 @@ maps  <- read_excel(map_file,sheet=map_sheet) %>%
     filter(!is.na(`CTDC Destination Property`)) %>%
     mutate( `dbGaP code` = str_to_upper( str_sub(`CMB Source Data File`,1,2) ) )
 
-bases  <- maps %>% group_by(`CMB Source Data File`) %>% summarize(base = any(`Base Table`,na.rm=TRUE))
+# ensure first tbl in list is a base table - i.e., a table that has the
+# full set of IDs to be filtered out in the ensuing left_joins
+# The following orders the source table within the dest node them by
+# putting the tbls that are marked "TRUE" in 'Base Table' first
+# (ensures all base table rows are represented in the left_join result
+
+tbls <- maps %>% group_by(`CTDC Destination Node`,`CMB Source Data File`) %>% summarize(base = any(`Base Table`,na.rm=TRUE)) %>% arrange(!base, .by_group=TRUE)
 
 not_processed  <- maps %>% anti_join(fields_by_file, by=c("CMB Source Data File" = "file",
                                                           "CMB Source Field" = "field"))
@@ -88,13 +94,7 @@ for (nd in maps$`CTDC Destination Node` %>% unique) {
         rename(pr = `CTDC Destination Property`,
                file = `CMB Source Data File`,
                field = `CMB Source Field`)
-    tbls <- (props %>% group_by(file) %>% summarize())[['file']]
-    # ensure first tbl in list is a base table - i.e., a table that has the
-    # full set of IDs to be filtered out in the ensuing left_joins
-    # The following looks up the tbls in bases tbl - orders them by
-    # putting the tbls that are marked "TRUE" in bases$base first in the
-    # list
-    tbls  <- tbls[rev(order(bases$base[match(tbls, bases$`CMB Source Data File`)]))]
+    nd_tbls <- (tbls %>% filter( `CTDC Destination Node` == nd ))$`CMB Source Data File`
     dta  <- NULL
     join_cols <- NULL
     if (nd =='specimen') {
@@ -102,7 +102,7 @@ for (nd in maps$`CTDC Destination Node` %>% unique) {
     } else {
         join_cols  <- c('SUBJECT_ID')
     }
-    for (t in tbls) {
+    for (t in nd_tbls) {
         flds  <- (props %>% filter(file == {{t}}) %>% select(field))[['field']]
         flds  <- c(join_cols, flds)
         if (is.null(dta)) {
