@@ -34,7 +34,7 @@ datadir <- opt$datadir
 map_file <- opt$mapfile
 
 map_sheet  <- "Sheet1"
-data_files <- rev(grep("^[^~].*xlsx", list.files(datadir), value=T))
+data_files <- rev(list.files(datadir, pattern=".*xlsx$", recursive=TRUE))
 
 ## actual column names in dbGaP data files:
 fields_by_file <- tibble(data_files %>%
@@ -42,13 +42,14 @@ fields_by_file <- tibble(data_files %>%
                              function (f) {
                                  xx<-read_excel(paste(datadir,f,sep="/"),col_names=F);
                                  data.frame(file = rep(f,length(xx[1,])),
-                                            field = as.vector(xx[1,],mode="character"))}))
+                                            field = as.vector(xx[1,],mode="character"))}));
+fields_by_file  <- fields_by_file %>% mutate( basename = basename(file) )
 
 ## Read submitted CMB data
 
 maps  <- read_excel(map_file,sheet=map_sheet) %>%
-    filter(!is.na(`CMB Source Data File`)) %>%
-    filter(!is.na(`CMB Source Field`)) %>%
+    filter(map2_lgl(`CMB Source Data File`,`Fixed Value?`, \(x, y) (!is.na(x) || !is.na(y)))) %>%
+    filter(map2_lgl(`CMB Source Field`,`Fixed Value?`, \(x, y) (!is.na(x) || !is.na(y))) ) %>%
     filter(!is.na(`CTDC Destination Node`)) %>%
     filter(!is.na(`CTDC Destination Property`)) %>%
     mutate( `dbGaP code` = str_to_upper( str_sub(`CMB Source Data File`,1,2) ) )
@@ -59,12 +60,20 @@ maps  <- read_excel(map_file,sheet=map_sheet) %>%
 # putting the tbls that are marked "TRUE" in 'Base Table' first
 # (ensures all base table rows are represented in the left_join result
 
-tbls <- maps %>% group_by(`CTDC Destination Node`,`CMB Source Data File`) %>% summarize(base = any(`Base Table`,na.rm=TRUE)) %>% arrange(!base, .by_group=TRUE)
+tbls <- maps %>%
+    filter(!is.na(`CMB Source Data File`)) %>%
+    group_by(`CTDC Destination Node`,`CMB Source Data File`) %>%
+    summarize(base = any(`Base Table`,na.rm=TRUE)) %>%
+    arrange(!base, .by_group=TRUE)
 
-not_processed  <- maps %>% anti_join(fields_by_file, by=c("CMB Source Data File" = "file",
+not_processed  <- maps %>% anti_join(fields_by_file, by=c("CMB Source Data File" = "basename",
                                                           "CMB Source Field" = "field"))
-maps  <- maps %>% semi_join(fields_by_file, by=c("CMB Source Data File" = "file",
-                                                          "CMB Source Field" = "field"))
+maps  <- maps %>%
+    semi_join(fields_by_file, by=c("CMB Source Data File" = "basename",
+                                   "CMB Source Field" = "field")) %>%
+    bind_rows(maps %>% filter(!is.na(`Fixed Value?`)))
+    
+
 if (length(not_processed) > 0) {
     warning("The above fields in the map file are not present in the data files.\nThey will not be processed.")
     not_processed %>% select(`CMB Source Data File`,`CMB Source Field`) %>% print(n=Inf)
@@ -90,10 +99,12 @@ for (m in maps$`CMB Source Data File` %>% unique) {
 
 for (nd in maps$`CTDC Destination Node` %>% unique) {
     props <- maps %>% filter(`CTDC Destination Node`==nd) %>%
-        select(`CTDC Destination Property`, `CMB Source Data File`, `CMB Source Field`) %>%
+        select(`CTDC Destination Property`, `CMB Source Data File`,
+               `CMB Source Field`, `Fixed Value?`) %>%
         rename(pr = `CTDC Destination Property`,
                file = `CMB Source Data File`,
-               field = `CMB Source Field`)
+               field = `CMB Source Field`,
+               fixedv = `Fixed Value?`)
     nd_tbls <- (tbls %>% filter( `CTDC Destination Node` == nd ))$`CMB Source Data File`
     dta  <- NULL
     join_cols <- NULL
@@ -114,16 +125,25 @@ for (nd in maps$`CTDC Destination Node` %>% unique) {
     }
     dta  <- dta %>% unique
     # add CTDC columns and remove CMB columns
-    for (i in c(1:length(props$pr))) {
-        pr  <-  props$pr[i]
-        field  <- props$field[i]
+    xfmd_props  <- (props %>% filter(is.na(fixedv)))
+    for (i in c(1:length(xfmd_props$pr))) {
+        pr  <-  xfmd_props$pr[i]
+        field  <- xfmd_props$field[i]
         # see vignette('programming'):
         dta <- dta %>% mutate( {{pr}} := .data[[field]] )
     }
     # must be single symbols in {{ }}, not expressions:
-    from_col  <- props$pr[1]
-    to_col  <- props$pr[length(props$pr)]
-    targets[[nd]]  <- dta %>% select( {{from_col}}:{{to_col}} ) %>% mutate(type = {{nd}})
+    from_col  <- xfmd_props$pr[1]
+    to_col  <- xfmd_props$pr[length(xfmd_props$pr)]
+    dta  <- dta %>% select( {{from_col}}:{{to_col}} ) %>% mutate(type = {{nd}})
+
+    #add any fixed value fields
+    
+    for (p in (props %>% filter(!is.na(fixedv)))$pr) {
+        fv = (props %>% filter(pr == p))$fixedv
+        dta  <- dta %>% mutate( {{p}} := {{fv}} )
+    }
+    targets[[nd]]  <- dta
 }
 
 ## other transformations
