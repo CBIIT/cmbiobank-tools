@@ -175,6 +175,6 @@ targets[['surgery']] <- targets[['surgery']] %>%
 
 for (nd in names(targets)) {
     write_tsv(targets[[nd]],
-              paste(file.path(opt$outdir, nd),"txt",sep="."),
+              paste(file.path(opt$outdir, nd),"tsv",sep="."),
               na="")
 }
