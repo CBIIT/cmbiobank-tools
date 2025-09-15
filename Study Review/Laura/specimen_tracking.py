@@ -3,7 +3,7 @@ import os,csv
 os.chdir("/Users/mohandasa2/Desktop/Laura-study/RAVE")
 spectrans=open("shippingStatusMoChaOutput_output.txt",'r')
 specfh=spectrans.readlines()
-spectrac=open("CMB_specimen_tracking_enrollment.CSV",'r')
+spectrac=open("specimen_tracking_enrollment.CSV",'r')
 spectransfh=csv.reader(spectrac)
 spectrackList=[]
 for i in spectransfh:

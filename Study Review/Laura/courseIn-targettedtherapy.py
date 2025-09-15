@@ -13,6 +13,8 @@ for i in coursefh:
                     ECTARGET = col
                 elif i[col] == "ECDRGCLS":
                     ECDRGCLS = col
+                elif i[col] == "RecordActive":
+                    RecordActive = col
                 elif i[col] == "MALG_NEO_ANTM_TP":
                     MALG_NEO_ANTM_TP = col
                 elif i[col] == "subjectId":
@@ -31,11 +33,14 @@ for i in coursefh:
                     if i[col] == "SiteNumber":
                         SiteNum = col
         else:
-            search3 = i[subId] + "_" + i[sub] + "_" + i[siteid] + "_" + i[Site] + "_" + i[proj] + "_" + i[SiteNum]
-            ll=[search3,i[ECTARGET],i[ECDRGCLS],i[MALG_NEO_ANTM_TP]]
+            if i[RecordActive]=="0":
+                continue
+            else:
+                search3 = i[subId] + "_" + i[sub] + "_" + i[siteid] + "_" + i[Site] + "_" + i[proj] + "_" + i[SiteNum]
+                ll=[search3,i[ECTARGET],i[ECDRGCLS],i[MALG_NEO_ANTM_TP]]
 
-            final = [x.replace('', "NA") if x == '' else x for x in ll]
-            conList.append(final)
+                final = [x.replace('', "NA") if x == '' else x for x in ll]
+                conList.append(final)
 
 # oncores = open("CourseOutput.csv", 'w')
 #

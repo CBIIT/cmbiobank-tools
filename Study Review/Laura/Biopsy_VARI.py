@@ -1,7 +1,7 @@
 import os,csv
 os.chdir("/Users/mohandasa2/Desktop/Laura-study/RAVE")
 
-bio=open("CMB_biopsy_pathology_verification_and_assessment.CSV",'r')
+bio=open("biopsy_pathology_verification_and_assessment.CSV",'r')
 biofh=csv.reader(bio)
 c=0
 dup={}
@@ -28,6 +28,8 @@ for line in biofh:
                 RecordActive = col
             elif line[col] == "MIREFID":
                 MIREFID = col
+            elif line[col] == "MIDAT_RAW":
+                MIDAT_RAW = col
             else:
                 if line[col] == "SiteNumber":
                     SiteNum = col
@@ -36,15 +38,13 @@ for line in biofh:
             continue
         else:
             if line[BSREFID_DRV].endswith("0000"):
-                search = line[proj] + "_" + line[subId] + "_" + line[sub] + "_" + line[siteid] + "_" + line[
-                    Site] + "_" + line[
-                             SiteNum] + "_" + line[MIREFID]
+                search = line[proj] + "_" + line[subId] + "_" + line[sub] + "_" + line[siteid] + "_" + line[Site] + "_" + line[SiteNum] + "_" + line[MIREFID]
                 if line[BSREFID_DRV] in dup:
                     continue
                 else:
-                    dup[line[BSREFID_DRV]]=[search,line[MIREFID]]
+                    dup[line[BSREFID_DRV]]=[search,line[MIREFID],line[MIDAT_RAW]]
                 c+=1
                 # print(line[BSREFID_DRV], c)
 for i,j in dup.items():
     print(i,j)
-    out.write(j[0]+ "\t"+ j[1]+"\t"+"NA"+"\t"+i+"\t"+"NA"+"\t"+"NA"+"\t"+"NA"+"\n")
+    out.write(j[0]+ "\t"+ j[1]+"\t"+"NA"+"\t"+i+"\t"+"NA"+"\t"+"NA"+"\t"+j[2]+"\n")

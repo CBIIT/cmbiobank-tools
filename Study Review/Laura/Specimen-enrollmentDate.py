@@ -4,7 +4,7 @@ os.chdir("/Users/mohandasa2/Desktop/Laura-study/RAVE")
 spectrans=open("biopsy_pathOutput.txt",'r')
 specfh=spectrans.readlines()
 
-spectrac=open("CMB_enrollment.CSV",'r')
+spectrac=open("enrollment.CSV",'r')
 enrollSpecimen=csv.reader(spectrac)
 enrollDateList={}
 for i in enrollSpecimen:
@@ -22,6 +22,7 @@ for i in enrollSpecimen:
                 siteid = col
             elif i[col] == "Site":
                 Site = col
+
             elif i[col] == "project":
                 proj = col
             else:
@@ -29,7 +30,7 @@ for i in enrollSpecimen:
                     SiteNum = col
     else:
         search3 = i[proj]+"_"+i[subId] + "_" + i[sub] + "_" + i[siteid] + "_" + i[Site] + "_" + i[SiteNum]
-        st=[search3,i[DSSTDAT_ENROLLMENT]]
+        st=[search3,i[DSSTDAT_ENROLLMENT],i[Site]]
         final = [x.replace('', "NA") if x == '' else x for x in st]
         # enrollDateList.append(final)
         if final[0] in enrollDateList:
@@ -37,6 +38,8 @@ for i in enrollSpecimen:
         else:
             enrollDateList[search3]=[]
             enrollDateList[search3].append(final[-1])
+            enrollDateList[search3].append(final[-2])
+
 oncores = open("specimenEnrollmentdate-output.txt", 'w')
 #
 for i in specfh:
@@ -51,10 +54,10 @@ for i in specfh:
     i.insert(0,s)
     # newlist = [k[0] for k in enrollDateList]
     if s in enrollDateList:
-            oncores.write("\t".join(i) + "\t" + enrollDateList.get(s)[0] + "\n")
+            oncores.write("\t".join(i) + "\t" + enrollDateList.get(s)[0]+"\t"+enrollDateList.get(s)[1] + "\n")
     else:
         if s.startswith(""):
-            oncores.write("\t".join(i) + "\t" + "Enrollment Date" + "\n")
+            oncores.write("\t".join(i) + "\t" + "Enrollment Site" +"\t"+"Enrollment Date"+ "\n")
         else:
             oncores.write("\t".join(i) + "\t" + "NA"  + "\n")
 

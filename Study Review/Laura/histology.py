@@ -1,10 +1,10 @@
 import os,csv
 
 os.chdir("/Users/mohandasa2/Desktop/Laura-study/RAVE")
-cour=open("Targeted_TherapyOutput.txt",'r')
+cour=open("enrollmentData.txt",'r')
 courfh=cour.readlines()
 # courfh=csv.reader(cour)
-hist=open("CMB_histology_and_disease.CSV",'r')
+hist=open("histology_and_disease.CSV",'r')
 histfh=csv.reader(hist)
 histoList={}
 
@@ -48,6 +48,7 @@ oncores = open("HistologyOutput.txt", 'w')
 
 for value in courfh:
     value=value.rstrip().split("\t")
+    print(value)
     if value[0] in histoList:
         oncores.write("\t".join(value) + "\t" + str(set(histoList.get(value[0]))) + "\n")
     else:

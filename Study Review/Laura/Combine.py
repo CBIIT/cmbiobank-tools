@@ -47,7 +47,7 @@ for i in aa:
     # print(i)
     output.write(",".join(i) + "\n")
 def intervening():
-    interveninng=open("CMB_intervening_therapy.CSV",'r')
+    interveninng=open("intervening_therapy.CSV",'r')
     inv=csv.reader(interveninng)
     for line in inv:
         if line[0].startswith("projectid"):
@@ -100,10 +100,12 @@ for x,y in invkey.items():
     newSupp[x]=finalval
 out=open("INVout.txt",'w')
 for x in aa:
-    print(x)
+    # print(x)
     if x[0] in newSupp:
-        print(x[0])
+        # print(x[0],finalval)
         out.write("\t".join(x) + "\t" + str(newSupp.get(x[0])[0]) + "\t" + str(newSupp.get(x[0])[1]) + "\n")
+        # print("\t".join(x) + "\t" + str(newSupp.get(x[0])[0]) + "\t" + str(newSupp.get(x[0])[1]) +"kk")
+
     else:
         if "Key" in x[0]:
             out.write("\t".join(x) + "\n")

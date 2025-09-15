@@ -4,7 +4,7 @@ os.chdir("/Users/mohandasa2/Desktop/Laura-study/RAVE")
 socio=open("INVout.txt",'r')
 # sociofh=csv.reader(socio)
 sociofh=socio.readlines()
-courseIni=open("CMB_course_initiation.CSV",'r')
+courseIni=open("course_initiation.CSV",'r')
 coursefh=csv.reader(courseIni)
 conList={}
 for i in coursefh:
@@ -28,19 +28,24 @@ for i in coursefh:
                     Site = col
                 elif i[col] == "project":
                     proj = col
+                elif i[col] == "RecordActive":
+                    RecordActive = col
                 else:
                     if i[col] == "SiteNumber":
                         SiteNum = col
         else:
-            search3 = i[subId] + "_" + i[sub] + "_" + i[siteid] + "_" + i[Site] + "_" + i[proj] + "_" + i[SiteNum]
-            ll=[search3,i[ECTARGET],i[ECDRGCLS],i[cycle]]
-            final = [x.replace('', "NA") if x == '' else x for x in ll]
-            val_final=[final[1]+"@ECTARGET",final[2]+"@ECDRGCLS",final[3]+"@cycle"]
-            if final[0] in conList:
-                conList[final[0]].append(val_final)
+            if i[RecordActive]=="0":
+                continue
             else:
-                conList[final[0]]=[]
-                conList[final[0]].append(val_final)
+                search3 = i[subId] + "_" + i[sub] + "_" + i[siteid] + "_" + i[Site] + "_" + i[proj] + "_" + i[SiteNum]
+                ll=[search3,i[ECTARGET],i[ECDRGCLS],i[cycle]]
+                final = [x.replace('', "NA") if x == '' else x for x in ll]
+                val_final=[final[1]+"@ECTARGET",final[2]+"@ECDRGCLS",final[3]+"@cycle"]
+                if final[0] in conList:
+                    conList[final[0]].append(val_final)
+                else:
+                    conList[final[0]]=[]
+                    conList[final[0]].append(val_final)
 
             # conList.append(final)
 

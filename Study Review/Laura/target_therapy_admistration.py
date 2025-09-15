@@ -3,7 +3,7 @@ import os,csv
 os.chdir("/Users/mohandasa2/Desktop/Laura-study/RAVE")
 f=open("CourseOutput.txt",'r')
 fh=f.readlines()
-file=open("CMB_targeted_therapy_administration.CSV",'r')
+file=open("targeted_therapy_administration.CSV",'r')
 fileH=csv.reader(file)
 
 TargetList={}
@@ -20,6 +20,8 @@ for i in fileH:
                     sub = col
                 elif i[col] == "siteid":
                     siteid = col
+                elif i[col] == "RecordActive":
+                    RecordActive = col
                 elif i[col] == "Site":
                     Site = col
                 elif i[col] == "project":
@@ -28,14 +30,17 @@ for i in fileH:
                     if i[col] == "SiteNumber":
                         SiteNum = col
         else:
-            search3 = i[subId] + "_" + i[sub] + "_" + i[siteid] + "_" + i[Site] + "_" + i[proj] + "_" + i[SiteNum]
-            ll=[search3,i[CMTRT_DSL]]
-            final = [x.replace('', "NA") if x == '' else x for x in ll]
-            if final[0] in TargetList:
-                TargetList[final[0]].append(final[1])
+            if i[RecordActive]=="0":
+                continue
             else:
-                TargetList[final[0]] = []
-                TargetList[final[0]].append(final[1])
+                search3 = i[subId] + "_" + i[sub] + "_" + i[siteid] + "_" + i[Site] + "_" + i[proj] + "_" + i[SiteNum]
+                ll=[search3,i[CMTRT_DSL]]
+                final = [x.replace('', "NA") if x == '' else x for x in ll]
+                if final[0] in TargetList:
+                    TargetList[final[0]].append(final[1])
+                else:
+                    TargetList[final[0]] = []
+                    TargetList[final[0]].append(final[1])
 
 oncores = open("Targeted_TherapyOutput.txt", 'w')
 

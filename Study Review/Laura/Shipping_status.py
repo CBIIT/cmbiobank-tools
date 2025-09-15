@@ -3,7 +3,7 @@ import os,csv
 os.chdir("/Users/mohandasa2/Desktop/Laura-study/RAVE")
 inv=open("outputreceiving.txt",'r')
 invfh=inv.readlines()
-ship=open("CMB_shipping_status.CSV",'r')
+ship=open("shipping_status.CSV",'r')
 shipfh=csv.reader(ship)
 shipList={}
 
@@ -25,12 +25,14 @@ for i in shipfh:
             continue
         else:
             if i[BEPARTY]=="CLIA - Fredrick MoCha Lab":
-                k=i[SPECID]+"_"+i[SUBSPCM].replace(", ","_")
-                print(k)
+                k=i[SPECID]+"_"+i[SUBSPCM].replace(", ","_").replace(",  ","_").replace("; ","_").replace(" , ","_").replace(",","_")
                 if k in shipList:
                     print("EEEEEERRRRRRROOORRRRRRRR")
                 else:
                     shipList[k]=i[BESTDAT]
+
+for h, j in shipList.items():
+    print(h,j)
 oncores=open("shippingStatusMoChaOutput_output.txt",'w')
 for y in invfh:
     y = y.rstrip().split("\t")
@@ -46,10 +48,13 @@ for y in invfh:
         oncores.write("\t".join(y)+"\t"+"Shipped to MoCha"+"\n")
     else:
         ook = y[OSPECID] + "_" + y[DNASub] + "_" + y[RNAsub]
-        # print(ook)
         if ook in shipList:
+            # print(ook)
+
             oncores.write("\t".join(y)+"\t"+shipList.get(ook)+"\n")
         else:
+            print(ook)
+
             oncores.write("\t".join(y)+"\t"+"NA"+"\n")
 
 

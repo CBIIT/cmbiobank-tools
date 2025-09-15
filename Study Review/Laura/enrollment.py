@@ -1,11 +1,10 @@
 import os,csv
-from dateutil import parser
 
 os.chdir("/Users/mohandasa2/Desktop/Laura-study/RAVE")
-file=open("CMB_enrollment.CSV",'r')
-file2=open("enrollmentData.csv",'w')
-file2.write("project"+","+"SubjectId"+","+"Subject"+","+"siteid"+","+"Site"+","+"SiteNum"+","+"Age"+","+"Enrollment Date"+","+"Ethnicity"+","+"Sex"+","+
-            "Gender"+","+"Race1"+","+"Race2"+","+"Race3"+","+"Race4"+","+"Race5"+","+"Race6"+","+"Race7"+","+"Disease Code"+","+"Enrolling Site CTEP ID "+"\n")
+file=open("enrollment.CSV",'r')
+file2=open("enrollmentData.txt",'w')
+file2.write("Key"+"\t"+"project"+"\t"+"SubjectId"+"\t"+"Subject"+"\t"+"siteid"+"\t"+"Site"+"\t"+"SiteNum"+"\t"+"Age"+"\t"+"Enrollment Date"+"\t"+"Ethnicity"+"\t"+"Sex"+"\t"+
+            "Gender"+"\t"+"Race1"+"\t"+"Race2"+"\t"+"Race3"+"\t"+"Race4"+"\t"+"Race5"+"\t"+"Race6"+"\t"+"Race7"+"\t"+"Disease Code"+"\t"+"Enrolling Site CTEP ID "+"\n")
 fh=file.readlines()
 
 def enroll():
@@ -28,12 +27,13 @@ def enroll():
                      Site=i
                 elif line[i] == "AGE":
                      age=i
-                elif line[i] == "DSSTDAT_ENROLLMENT":
+                elif line[i] == "DSSTDAT_ENROLLMENT_RAW":
                      enrolldate=i
                 elif line[i] == "ETHNIC":
                     ethnic = i
                 elif line[i] == "SEX":
                     sex = i
+                    print(i)
                 elif line[i] == "GENDER":
                     gender = i
                 elif line[i] == "RACE_01":
@@ -58,11 +58,14 @@ def enroll():
                     if line[i] == "SiteNumber":
                         # print(line[i], i)
                         SiteNum = i
+
         else:
-            aa=[line[project],line[subId],line[sub],line[siteid],line[Site],line[SiteNum],line[age],line[enrolldate],line[ethnic],line[sex],\
-              line[gender],line[race1],line[race2],line[race3],line[race4],line[race5],line[race6],line[race7],line[ctep_sdc],line[CTEPID],line[Site]]
+            key=line[subId]+"_"+line[sub]+"_"+line[siteid]+"_"+line[Site]+"_"+line[project]+"_"+line[SiteNum]
+
+
+            aa=[key,line[project],line[subId],line[sub],line[siteid],line[Site],line[SiteNum],line[age],line[enrolldate],line[ethnic],line[sex],line[gender],line[race1],line[race2],line[race3],line[race4],line[race5],line[race6],line[race7],line[ctep_sdc],line[CTEPID]]
             print(aa)
 
-            file2.write(",".join(aa)+"\n")
+            file2.write("\t".join(aa)+"\n")
 
 enroll()

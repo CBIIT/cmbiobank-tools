@@ -1,10 +1,10 @@
 import os,csv
 
 os.chdir("/Users/mohandasa2/Desktop/Laura-study/RAVE")
-onco=open("prior_treatmentOutput.txt",'r')
+onco=open("HistologyOutput.txt",'r')
 oncofh=onco.readlines()
 # oncofh=csv.reader(onco)
-socio=open("CMB_prior__radiation_supplement.CSV")
+socio=open("prior__radiation_supplement.CSV")
 sociofh=csv.reader(socio)
 radioList={}
 

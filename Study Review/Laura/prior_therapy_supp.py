@@ -5,7 +5,7 @@ prio=open("HistologyOutput.txt",'r')
 priofh=prio.readlines()
 # priofh=csv.reader(prio)
 
-supp=open("CMB_prior__therapy_supplement.CSV")
+supp=open("prior__therapy_supplement.CSV")
 suppfh=csv.reader(supp)
 suppList={}
 

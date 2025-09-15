@@ -1,8 +1,10 @@
 import os,csv
 from dateutil import parser
+from datetime import date
 
 os.chdir("/Users/mohandasa2/Desktop/CatalogData/RAVE")
-file=open("CMB_enrollment.CSV",'r')
+file=open("enrollment.CSV",'r')
+flag=open("dataFlag Disease Site","w")
 fh=file.readlines()
 catalog={}
 bio={}
@@ -38,8 +40,6 @@ def enroll():
                     ethnic = i
                 elif line[i] == "SEX":
                     sex = i
-                elif line[i] == "GENDER":
-                    gender = i
                 elif line[i] == "RACE_01":
                     race1 = i
                 elif line[i] == "RACE_02":
@@ -54,6 +54,8 @@ def enroll():
                     race6 = i
                 elif line[i] == "RACE_07":
                     race7 = i
+                elif line[i] == "RecordActive":
+                    RecordActive = i
                 elif line[i] == "MHLOC":
                     MHLOC = i
                 else:
@@ -61,137 +63,136 @@ def enroll():
                         # print(line[i], i)
                         SiteNum = i
         else:
-            # print(line[project],line[subId],line[sub],line[siteid],line[Site],line[SiteNum])
-            search=line[project]+"_"+line[subId]+"_"+line[sub]+"_"+line[siteid]+"_"+line[Site]+"_"+line[SiteNum]
-            if search in catalog:
-                print("!!!!!!!!!!Warning key found multiple times!!!!!!!!!!")
+            if line[RecordActive]=="0":
+                continue
+
             else:
-                catalog[search]=[]
-                k=parser.parse(line[dob])
-                m=parser.parse(line[enrolldate])
-                a=k-m
-                cal=(str(a).split(" ")[0])
-                add=[line[age],line[dob],line[enrolldate],cal,line[Dcode],line[ethnic],line[sex],line[gender],line[race1],line[race2],line[race3],line[race4],line[race5],line[race6],line[race7],line[MHLOC]]
-                catalog[search].extend(add)
+                # print(line[project],line[subId],line[sub],line[siteid],line[Site],line[SiteNum])
+                search=line[project]+"_"+line[subId]+"_"+line[sub]+"_"+line[siteid]+"_"+line[Site]+"_"+line[SiteNum]
+                if search in catalog:
+                    print("!!!!!!!!!!Warning key found multiple times!!!!!!!!!!")
+                else:
+                    catalog[search]=[]
+                    k=parser.parse(line[dob])
+                    m=parser.parse(line[enrolldate])
+                    a=k-m
+                    cal=(str(a).split(" ")[0])
+                    add=[line[age],line[dob],line[enrolldate],cal,line[Dcode],line[ethnic],line[sex],line[race1],line[race2],line[race3],line[race4],line[race5],line[race6],line[race7],line[MHLOC]]
+                    catalog[search].extend(add)
 
 
 def biopsy_pat():
-    bfile=open("CMB_biopsy_pathology_verification_and_assessment.csv",'r')
-    output1 = open("biopsyOut.txt", 'w')
-    output1.write("project"+"\t"+"SubjectId"+"\t"+"Subject"+"\t"+"SiteId"+"\t"+"Site"+"\t"+"SiteNumber"+"\t"+"MILOC"+"\t"+"MIORRES_TUCONT_X1"+"\t"+"MIORRES_TUCONT_X2"+"\n")
-    fhb=csv.reader(bfile)
-    pathology={}
-    for dat in fhb:
-        # dat=dat.rstrip().split(",")
-        if dat[0].startswith("projectid"):
-            for x in range(0,len(dat)):
-                if dat[x]=="MILOC":
-                    miloc= x
-                elif dat[x] =="MIORRES_TUCONT_X1":
-                    tumcon1=x
-                elif dat[x]=="subjectId":
+    biofile=open("biopsy_pathology_verification_and_assessment.CSV",'r')
+    BioOutput=open("BiopsyPat.txt",'w')
+    Biofh=csv.reader(biofile)
+    EnrollOutput=open("enrolloutput.txt",'r')
+    BioRead=EnrollOutput.readlines()
+    biopsy=[]
+    bio_dic={}
+    for line in BioRead:
+        line=line.split("\t")
+        biopsy.append(line)
+    for soc in Biofh:
+        if soc[0].startswith("projectid"):
+            for col in range(0, len(soc)):
+                if soc[col] == "MILOC":
+                    MILOC = col
+                elif soc[col] == "subjectId":
                     # print(line[i],i)
-                    subId=x
-                elif dat[x] == "Subject":
-                     # print(line[i], i)
-                     sub=x
-                elif dat[x] == "siteid":
-                     siteid=x
-                elif dat[x] == "Site":
-                     Site=x
-                elif dat[x] =="project":
-                     proj=x
-                elif dat[x]=="SiteNumber":
-                     SiteNum=x
+                    subId = col
+                elif soc[col] == "Subject":
+                    # print(line[i], i)
+                    sub = col
+                elif soc[col] == "siteid":
+                    siteid = col
+                elif soc[col] == "Site":
+                    Site = col
+                elif soc[col] == "RecordActive":
+                    RecordActive = col
+                elif soc[col] == "project":
+                    proj = col
                 else:
-                    if dat[x] =="MIORRES_TUCONT_X2":
-                        tumcon2=x
+                    if soc[col] == "SiteNumber":
+                        SiteNum = col
         else:
-            # print(line[project],line[subId],line[sub],line[siteid],line[Site],line[SiteNum])
-            search1=dat[proj]+"_"+dat[subId]+"_"+dat[sub]+"_"+dat[siteid]+"_"+dat[Site]+"_"+dat[SiteNum]
-            val1=dat[miloc]+"_"+dat[tumcon1]+"_"+dat[tumcon2]
-            # val1=dat[miloc],dat[tumcon1],dat[tumcon2]
-
-            if search1 in pathology:
-                if val1==pathology.get(search1):
-                    continue
-                else:
-                    pathology[search1].append(val1)
-                    print("ERRRROOOOORRRRRRRRRR")
-                    print(search1,val1)
-                    # output1.write(dat[proj]+"\t"+dat[subId]+"\t"+dat[sub]+"\t"+dat[siteid]+"\t"+dat[Site]+"\t"+dat[SiteNum]+"\t"+dat[miloc]+"\t"
-                    #               +dat[tumcon1]+"\t"+dat[tumcon2]+"\n")
+            if soc[RecordActive]=="0":
+                continue
             else:
-                pathology[search1]=[]
-                pathology[search1].append(val1)
-        for i,j in pathology.items():
-            output1.write("\t".join(i.split("_"))+"\t"+j+"\n")
-                # print(i,j)
+                search4=soc[proj]+"_"+soc[subId]+"_"+soc[sub]+"_"+soc[siteid]+"_"+soc[Site]+"_"+soc[SiteNum]
+                bio_dic[search4]=[soc[MILOC]]
+    for l in biopsy:
+        nl = [x.replace("\n", "") for x in l]
+        # print(nl)
+        if l[0] in bio_dic:
+            BioOutput.write("\t".join(nl)+"\t"+"\t".join(bio_dic.get(l[0]))+"\n")
+        else:
+            if nl[0].startswith("SubjectID"):
+                BioOutput.write("\t".join(nl) + "\t" + "Anatomic Collection Site"+"\n")
+            else:
+                BioOutput.write("\t".join(nl) + "\t" + " "+"\n")
 
-            # print(dat[proj]+"\t"+dat[subId]+"\t"+dat[sub]+"\t"+dat[siteid]+"\t"+dat[Site]+"\t"+dat[SiteNum]+"\t"+dat[miloc]+"\t"+
-            #               tumcon1,tumcon2,dat[tumcon1]+"\t"+dat[tumcon2])
-            # print(len(dat),"\t",dat)
-            # print(dat[tumcon1],tumcon1,dat[tumcon2],tumcon2)
-            # if search1 in catalog:
-            #     k=[dat[miloc],dat[tumcon1],dat[tumcon2]]
-            #     catalog[search1].append(k)
-            #
-            # else:
-            #     print(search1+"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!search1 not present")
 def intervening():
-    file3=open("CMB_intervening_therapy.CSV",'r')
-    output_interv=open("InterveningOut.txt",'w')
-    output_interv.write("SubjectID" + "\t" + "AGE"+"\t"+"BirthDate"+"\t"+"Enrollment Date"+"\t"+"Calculated Birth Date" + "\t" + "Disease Code" + "\t" + "Ethnicity" + "\t" + "SEX" + "\t" + "Gender" + "\t" + "Race1" + "\t"
-                        + "Race2"+ "\t" + "Race3"+ "\t" + "Race4"+ "\t" + "Race5"+ "\t" + "Race6"+ "\t" + "Race7"  + "\t" +"Primary Disease Site"+"\t"+ "Therapy Category" + "\t" +
-              "Response Assessment"+"\t"+"Intervening Therapies"+"\t"+"Oncomine Results Available"+"\n")
-    inte=[]
-    fileread=csv.reader(file3)
-    for item in fileread:
-        if item[0].startswith("projectid"):
-            for col in range(0,len(item)):
-                if item[col]=="BESTRESP":
-                    bresp=col
-                elif item[col]=="CMCAT":
-                    cmcat= col
-                elif item[col]=="CMTRT":
-                    cmtrt= col
-                elif item[col]=="subjectId":
-                    # print(line[i],i)
-                    subId=col
-                elif item[col] == "Subject":
-                     # print(line[i], i)
-                     sub=col
-                elif item[col] == "siteid":
-                     siteid=col
-                elif item[col] == "Site":
-                     Site=col
-                elif item[col] =="project":
-                     proj=col
+    interveningfile = open("intervening_therapy.CSV", 'r')
+    InterData = open("InterveningData.txt", 'w')
+    Invfh = csv.reader(interveningfile)
+    BiopsyOutput = open("enrolloutput.txt", 'r')
+    Interveningfh = BiopsyOutput.readlines()
+    onco = []
+    inv_dic = {}
+    for line in Interveningfh:
+        line = line.split("\t")
+        onco.append(line)
+    for soc in Invfh:
+        if soc[0].startswith("projectid"):
+            for col in range(0, len(soc)):
+                if soc[col] == "BESTRESP":
+                    BESTRESP = col
+                # elif soc[col] == "CMCAT":
+                #     CMCAT = col
+                elif soc[col] == "subjectId":
+                    subId = col
+                elif soc[col] == "Subject":
+                    # print(line[i], i)
+                    sub = col
+                elif soc[col] == "siteid":
+                    siteid = col
+                elif soc[col] == "Site":
+                    Site = col
+                elif soc[col] == "RecordActive":
+                    RecordActive = col
+                elif soc[col] == "project":
+                    proj = col
                 else:
-                    if item[col]=="SiteNumber":
-                     SiteNum=col
+                    if soc[col] == "SiteNumber":
+                        SiteNum = col
         else:
-            search2=item[proj]+"_"+item[subId]+"_"+item[sub]+"_"+item[siteid]+"_"+item[Site]+"_"+item[SiteNum]
-            l=[search2,item[cmcat],item[bresp],item[cmtrt]]
-            inte.append(l)
-    # print(inte)
-    for i,j in catalog.items():
-        newlist=[x[0] for x in inte]
-        if i in newlist:
-            for y in inte:
-                if i in y[0]:
-                    output_interv.write(i+"\t"+"\t".join(j)+"\t"+"\t".join(y[1:])+"\n")
+            if soc[RecordActive] == "0":
+                continue
+            else:
+                search4 = soc[proj] + "_" + soc[subId] + "_" + soc[sub] + "_" + soc[siteid] + "_" + soc[Site] + "_" + \
+                          soc[SiteNum]
+                inv_dic[search4] = [soc[BESTRESP]]
+    for l in onco:
+        nl = [x.replace("\n", "") for x in l]
+        # print(nl)
+        if l[0] in inv_dic:
+            InterData.write("\t".join(nl) + "\t" + "\t".join(inv_dic.get(l[0])) + "\n")
         else:
-            output_interv.write(i+"\t"+"\t".join(j)+"\t"+" "+"\t"+" "+"\t"+" "+"\n")
+            if nl[0].startswith("SubjectID"):
+                InterData.write("\t".join(nl) + "\t" + "Treatment Response" + "\n")
+            else:
+                InterData.write("\t".join(nl) + "\t" + " " + "\n")
+
 def oncomine():
-    oncofile=open("CMB_oncomine_result.CSV",'r')
+    oncofile=open("oncomine_result.CSV",'r')
     oncofile_output=open("oncooutput.txt",'w')
-    intervenfile=open("InterveningOut.txt",'r')
+    intervenfile=open("InterveningData.txt",'r')
     indic=[]
     onco={}
     interfh=intervenfile.readlines()
 
     for x in interfh:
+        print(x)
         x=x.split("\t")
         indic.append(x)
 
@@ -211,17 +212,24 @@ def oncomine():
                     siteid = col
                 elif num[col] == "Site":
                     Site = col
+                elif num[col] == "RecordActive":
+                    RecordActive = col
                 elif num[col] == "project":
                     proj = col
                 else:
                     if num[col] == "SiteNumber":
                         SiteNum = col
         else:
-            search3=num[proj]+"_"+num[subId]+"_"+num[sub]+"_"+num[siteid]+"_"+num[Site]+"_"+num[SiteNum]
-            # print(search3)
-            onco[search3]=num[PFORRES_SPD]
+            if num[RecordActive]=="0":
+                continue
+            else:
+                if num[PFORRES_SPD]=="Pass":
+                    y=num[PFORRES_SPD].replace("Pass","Available")
+                    search3=num[proj]+"_"+num[subId]+"_"+num[sub]+"_"+num[siteid]+"_"+num[Site]+"_"+num[SiteNum]
+                    # print(search3)
+                    onco[search3]=y
     for n in indic:
-        print(n)
+        # print(n)
         if "\n" in n:
             n.remove('\n')
             n.append(" ")
@@ -245,11 +253,11 @@ def oncomine():
                 oncofile_output.write("\t".join(ele)+"\n")
             else:
                     if "SubjectID" in ele[0]:
-                        oncofile_output.write("\t".join(ele)+"\n")
+                        oncofile_output.write("\t".join(ele)+"\t"+"Biomarker Results"+"\n")
                     else:
                         oncofile_output.write("\t".join(ele)+"\t"+" "+"\n")
 def social():
-    socfile=open("CMB_social_and_environmental_factors.CSV",'r')
+    socfile=open("social_and_environmental_factors.CSV",'r')
     socEnv=open("SocialEnv.txt",'w')
     socfh=csv.reader(socfile)
     oncoOutput=open("oncooutput.txt",'r')
@@ -286,14 +294,21 @@ def social():
                     siteid = col
                 elif soc[col] == "Site":
                     Site = col
+                elif soc[col] == "RecordActive":
+                    RecordActive = col
                 elif soc[col] == "project":
                     proj = col
                 else:
                     if soc[col] == "SiteNumber":
                         SiteNum = col
         else:
-            search4=soc[proj]+"_"+soc[subId]+"_"+soc[sub]+"_"+soc[siteid]+"_"+soc[Site]+"_"+soc[SiteNum]
-            soc_dic[search4]=[soc[smokSun],soc[smokeYr],soc[smokeDur],soc[alcohol],soc[erOccur]]
+            if soc[RecordActive]=="0":
+                continue
+            else:
+                search4=soc[proj]+"_"+soc[subId]+"_"+soc[sub]+"_"+soc[siteid]+"_"+soc[Site]+"_"+soc[SiteNum]
+                smoke=soc[smokSun].replace("Current reformed smoker for more than 15 years","Quit > 15 yrs. ago").replace("Current smoker","Current").replace("Current reformed smoker for less than or equal to 15 years","Quit < 15 yrs. ago").replace("Lifelong non-smoker","Never").replace("Smoking history not documented","Not provided")
+                alco=soc[alcohol].replace("Consumed alcohol in the past, but currently a non-drinker","Former").replace("Alcohol consumption equal to or less than 2 drinks per day for men and 1 drink or less per day for women","Moderate").replace("Alcohol consumption more  than 2 drinks per day for men and more than 1 drink per day for women","Heavy (note that Heavy is not correct term,)").replace("Lifelong non-drinker","Nondrinker").replace("Alcohol consumption history not available","Not Provided")
+                soc_dic[search4]=[smoke,soc[smokeYr],soc[smokeDur],alco,soc[erOccur]]
     for l in onco:
         nl = [x.replace("\n", "") for x in l]
         # print(nl)
@@ -301,12 +316,12 @@ def social():
             socEnv.write("\t".join(nl)+"\t"+"\t".join(soc_dic.get(l[0]))+"\n")
         else:
             if nl[0].startswith("SubjectID"):
-                socEnv.write("\t".join(nl) + "\t" + "SMOKING_SUNCF"+"\t"+"SMOK_PK_YR_NUM" + "\t" + "SMOKE_SUDUR"+"\t"+"ALCOHOL_SUNCF"+"\t"+"EROCCUR"+"\n")
+                socEnv.write("\t".join(nl) + "\t" + "Smoking History"+"\t"+"Smoking Pack Years" + "\t" + "Years Smoked"+"\t"+"Alcohol Consumption"+"\t"+"Carcinogen Exposure"+"\n")
             else:
                 socEnv.write("\t".join(nl) + "\t" + " "+"\t" + " " +"\t" + " "+"\t" + " "+"\t" + " " +"\n")
 
 def courseIni():
-    courseIni=open("CMB_course_initiation.CSV",'r')
+    courseIni=open("course_initiation.CSV",'r')
     coursefh=csv.reader(courseIni)
     socOpen=open("SocialEnv.txt",'r')
     course_output=open("course_ini_output.txt",'w')
@@ -335,15 +350,20 @@ def courseIni():
                     siteid = col
                 elif course[col] == "Site":
                     Site = col
+                elif course[col] == "RecordActive":
+                    RecordActive = col
                 elif course[col] == "project":
                     proj = col
                 else:
                     if course[col] == "SiteNumber":
                         SiteNum = col
         else:
-            search5=course[proj]+"_"+course[subId]+"_"+course[sub]+"_"+course[siteid]+"_"+course[Site]+"_"+course[SiteNum]
-            s=[search5,course[target],course[drugClass]]
-            cur.append(s)
+            if course[RecordActive]=="0":
+                continue
+            else:
+                search5=course[proj]+"_"+course[subId]+"_"+course[sub]+"_"+course[siteid]+"_"+course[Site]+"_"+course[SiteNum]
+                s=[search5,course[target],course[drugClass]]
+                cur.append(s)
     for item in evn:
         newlist = [x[0] for x in cur]
         if item[0] in newlist:
@@ -366,8 +386,8 @@ def courseIni():
                 course_output.write("\t".join(final)+"\t"+" "+"\t"+ " "+"\n")
 
 def histology():
-    histo=open("CMB_histology_and_disease.CSV",'r')
-    course_int=open("course_ini_output.txt",'r')
+    histo=open("histology_and_disease.CSV",'r')
+    course_int=open("SocialEnv.txt",'r')
     histo_output=open("histology_output.txt",'w')
     cour=course_int.readlines()
     courlist=[]
@@ -400,18 +420,23 @@ def histology():
                     siteid = col
                 elif hist[col] == "Site":
                     Site = col
+                elif hist[col] == "RecordActive":
+                    RecordActive = col
                 elif hist[col] == "project":
                     proj = col
                 else:
                     if hist[col] == "SiteNumber":
                         SiteNum = col
         else:
-            search5=hist[proj]+"_"+hist[subId]+"_"+hist[sub]+"_"+hist[siteid]+"_"+hist[Site]+"_"+hist[SiteNum]
-            l=[search5,hist[Dstate],hist[Tumgrade],hist[SNOMED],hist[dat]]
-            # print(l)
-            final=["nan" if x =='' else x for x in l]
-            # print(final)
-            histo_list.append(final)
+            if hist[RecordActive]=="0":
+                continue
+            else:
+                search5=hist[proj]+"_"+hist[subId]+"_"+hist[sub]+"_"+hist[siteid]+"_"+hist[Site]+"_"+hist[SiteNum]
+                l=[search5,hist[Dstate],hist[Tumgrade],hist[SNOMED],hist[dat]]
+                # print(l)
+                final=["nan" if x =='' else x for x in l]
+                # print(final)
+                histo_list.append(final)
     for y in courlist:
       for sublist in histo_list:
           if y[0] == sublist[0]:
@@ -425,13 +450,34 @@ def histology():
               y.append(sublist[-3])
               y.append(sublist[-2])
               y.append(sublist[-1])
-      # print(y)
       outlist = [val.replace("\n", "") for val in y]
-      # print(outlist)
-      histo_output.write("\t".join(outlist)+"\n")
+      if outlist[0].startswith("SubjectID"):
+          histo_output.write("\t".join(outlist) + "\t" + "Tumor Grade" + "\t" + "Disease stage (snoMed)" + "\t" + "Initial Diagnosis date" + "\n")
+          continue
+      else:
+          # Age at Enrollement
+          objBirth=parser.parse(outlist[2])
+          objEnroll=parser.parse(outlist[3])
+          ageD=(objEnroll-objBirth)
+          val=ageD/365.25
+          obj=(str(val).split(","))
+          diaAge=obj[0].replace("days"," ")
+          #SnoMed code
+          medra=outlist[5].replace("10010029","10010029 - Colorectal Carcinoma").replace("10028566","10028566 - Plasma Cell Myeloma").replace("10029514","10029514 - Lung Non-Small Cell Carcinoma").replace("10036910","10036910 - Prostate Carcinoma").replace("10041071","10041071 - Lung Small Cell Carcinoma").replace("10053571","10053571 - Melanoma").replace("10066354","10066354 - Gastroesophageal Junction Adenocarcinoma").replace("10000884","10000884-Acute Myeloid Leukemia Not Otherwise Specified")
+          stage=outlist[-2].split("=")
+          #Disease stage (snoMed)
+          Dstage=stage[0]+"Stage"+outlist[-4]
+          # outlist.insert(1,diaAge)
+          # outlist.pop(3)
+          outlist.insert(5,medra)
+          outlist.pop(6)
+          outlist.insert(-2,Dstage)
+          outlist.pop(-5)
+          outlist.pop(-2)
+          histo_output.write("\t".join(outlist)+"\n")
 
 def concom_prior_med():
-    concom=open("CMB_concomitant_and_prior_medications.CSV",'r')
+    concom=open("concomitant_and_prior_medications.CSV",'r')
     concomOutput=open("cocom_prior_med_Output.txt",'w')
     concomfh=csv.reader(concom)
     histology_output=open("histology_output.txt",'r')
@@ -469,6 +515,7 @@ def concom_prior_med():
                 conprior[search6]=[]
                 conprior[search6].append(x[cmtrt])
     for i in hhoo:
+        # print(i)
         if i[0] in conprior:
             # i.append(conprior.get(i[0]))
 
@@ -481,19 +528,22 @@ def concom_prior_med():
 
 
 
-enroll()
-# biopsy_pat()
+# enroll()
+# biopsy_pat() Do not Run
 # intervening()
 # oncomine()
 # social()
-# courseIni()
-# histology()
-# concom_prior_med()
+# courseIni() Do not Run
+histology()
+# concom_prior_med() Do not Run
 
+
+
+#Run while running the enrollment defination
 # output=open("enrolloutput.txt",'w')
-# output.write("SubjectID"+"\t"+"Age at Diagnosis"+"\t"+"BirthDate"+"\t"+"Enrollment Date"+"\t"+"Calculated Birth Date"+"\t"+"SnoMed Code"+"\t"+"Ethnicity"+"\t"+"SEX"+"\t"+"Gender"+"\t"+"Race1"+"\t"+"Race2"+"\t"+"Race3"
-#              +"\t"+"Race4"+"\t"+"Race5"+"\t"+"Race6"+"\t"+"Race7"+"\t"+"Primary Disease Site"+"\t"+"Treatment Response"+"\t"+"Therapy Category"+"\n")
-# #
+# output.write("SubjectID"+"\t"+"Age at Enrollment"+"\t"+"BirthDate"+"\t"+"Enrollment Date"+"\t"+"Calculated Birth Date"+"\t"+"Primary Diagnosis (MedDRA Disease Code)"+"\t"+"Ethnicity"+"\t"+"SEX"+"\t"+"Race1"+"\t"+"Race2"+"\t"+"Race3"
+#              +"\t"+"Race4"+"\t"+"Race5"+"\t"+"Race6"+"\t"+"Race7"+"\t"+"Primary Disease Site"+"\n")
+#
 # #     # print(i,j)
 # for i, j in catalog.items():
 #     output.write(i+"\t"+"\t".join(j)+"\n")
