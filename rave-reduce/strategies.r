@@ -410,15 +410,15 @@ strategies <- list(
             dplyr::filter(RecordActive == 1) %>%
             select(MIREFID,
                    SPLADQFL_X1_STD,
-
-
-
                    MIORRES_TUCONT_X1_STD,MIORRES_TUCONT_X2_STD,
                    MHTERM_DIAGNOSIS,
                    RecordPosition) %>% unique %>%
             inner_join(dta$specimen_tracking_enrollment %>%
                        select(SPECID_DRV,ASMTTPT_STD),
                        by = c("MIREFID" = "SPECID_DRV")) %>%
+            inner_join(dta$specimen_transmittal %>%
+                       select(SPECID, SPECSRC_STD),
+                       by = c("MIREFID" = "SPECID"))
             unique
         
         slides <-  bcr_report %>%
@@ -454,8 +454,9 @@ strategies <- list(
             ) %>%
             select( pub_id, pub_subspec_id, bcr_subspec_id = `BSI ID`,
                    Timepoint = ASMTTPT_STD,
-                   Topographic_Site = CTEP_SDC_MED_V10_CD,
-                   Tumor_Histologic_Type = MHTERM_DIAGNOSIS,
+                   Primary_Diagnosis = CTEP_SDC_MED_V10_CD,
+                   Pathology_Diagnosis = MHTERM_DIAGNOSIS,
+                   Source_Site = SPECSRC_STD,
                    Tumor_Segment_Acceptable = SPLADQFL_X1_STD,
                    Percent_Necrosis = vari_necrosis,
                    Percent_Tumor_Nuclei,
@@ -464,11 +465,8 @@ strategies <- list(
                    Gender = SEX_STD, Age = AGE, Ethnicity = ETHNIC_STD,
                    Race = RACE,
                    RecordPosition) %>%
-            mutate(
-                Tumor_Histologic_Type = str_to_title(Tumor_Histologic_Type)
-            ) %>%
             left_join(med_to_tcia,
-                      by = c("Topographic_Site" = "MedDRA Term")) %>%
+                      by = c("Primary_Diagnosis" = "MedDRA Term")) %>%
             rename( "TCIA_Collection" = "TCIA Collection") %>%
             unique
         ## add the filenames available from VARI - use the slide_table function
