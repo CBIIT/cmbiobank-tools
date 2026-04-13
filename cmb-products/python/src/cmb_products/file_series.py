@@ -33,7 +33,7 @@ from pathlib import Path
 
 date_re = re.compile(".*(202[0-9]{5})([.]([0-9]+))?[._]")
 date_iroc_re = re.compile(".*(202[0-9])-([0-9]{2})-([0-9]{2})([.]([0-9]+))?[._]")
-date_vari_re = re.compile(".* ([0-9]{1,2})[.]([0-9]{1,2})[.](202[0-9])([.]([0-9]+))?[.]xlsx")
+date_vari_re = re.compile(".* ([0-9]{1,2})[.-]([0-9]{1,2})[.-]((:?202[0-9]|2[1-9]))([.]([0-9]+))?.*[.]xlsx")
 
 class FileSeries(object):
     def __init__(self, path=None, seq=None):
